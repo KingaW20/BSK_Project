@@ -5,16 +5,16 @@ import bsk.project.Message;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Sender implements Runnable {
     private Socket socket;
-    private Message messageToSend;          //dla drugiego gracza - tutaj odczytac trzeba
-    private Message messageReceived;        //dla tego gracza - trzeba mu wyslac
+    private boolean firstClient;
+    private ArrayList<Message> messages;
 
-    public Sender(Socket socket, Message messageToSend, Message messageReceived) {
+    public Sender(Socket socket, boolean firstClient) {
         this.socket = socket;
-        this.messageToSend = messageToSend;
-        this.messageReceived = messageReceived;
+        this.firstClient = firstClient;
     }
 
     @Override
@@ -23,15 +23,19 @@ public class Sender implements Runnable {
             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 
             while(true) {
-                //wyslanie czegos - najlepiej w metodzie, jezeli wiele tego bedzie
-                if (messageReceived.ifReadyToSend()) {
-                    oos.writeObject(new Message(
-                            messageReceived.getContent(), messageReceived.ifFile(), messageReceived.ifReadyToSend()));
-                    messageReceived.setMessage(new Message());
+                messages = Server.getMessagesFrom(!firstClient);
+                if (messages.size() > 0) {
+                    Message mess = messages.remove(0);
+                    oos.writeObject(new Message(mess.getContent(), mess.ifFile()));
+                    System.out.println("Send");
                     oos.reset();
                     oos.flush();
+                    Server.setMessFrom(!firstClient, null);
                 }
             }
+
+//        oos.close();
+//        Thread.currentThread().interrupt();
         } catch (IOException e) {
             e.printStackTrace();
         }
