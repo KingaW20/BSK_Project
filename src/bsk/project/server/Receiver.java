@@ -27,6 +27,9 @@ public class Receiver implements Runnable {
                     Server.setMessFrom(firstClient, mess);
                 }
             }
+
+//        ois.close();
+//        Thread.currentThread().interrupt();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

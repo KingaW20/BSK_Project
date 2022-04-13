@@ -19,7 +19,7 @@ public class App {
 
     private static ArrayList<Message> clientMessages;
 
-    public App(Frame frame) {
+    public App() {
         singleton = this;
         clientMessages = new ArrayList<>();
         communication.setLineWrap(true);
@@ -31,11 +31,9 @@ public class App {
                 //JOptionPane.showMessageDialog(null, "Hello World");
                 String messageContent = input.getText();
                 communication.append("Me: " + messageContent + "\n");
-//                singleton.communication.append("Me: " + messageContent + "\n");
                 input.setText("");
 
-                //TODO: send message to another person
-                clientMessages.add(new Message(messageContent, false, true));
+                clientMessages.add(new Message(messageContent, false));
             }
         });
     }
@@ -44,7 +42,7 @@ public class App {
         JFrame frame = new JFrame("App");
         frame.setSize(new Dimension(800, 600));
         frame.setLocation(0, 0);
-        frame.setContentPane(new App(frame).window);
+        frame.setContentPane(new App().window);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
 
