@@ -26,7 +26,7 @@ public class Sender implements Runnable {
                 messages = Server.getMessagesFrom(!firstClient);
                 if (messages.size() > 0) {
                     Message mess = messages.remove(0);
-                    oos.writeObject(new Message(mess.getContent(), mess.ifFile()));
+                    oos.writeObject(new Message(mess.getContent(), mess.getType()));
                     System.out.println("Send");
                     oos.reset();
                     oos.flush();

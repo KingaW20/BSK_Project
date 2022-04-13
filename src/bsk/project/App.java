@@ -33,7 +33,7 @@ public class App {
                 communication.append("Me: " + messageContent + "\n");
                 input.setText("");
 
-                clientMessages.add(new Message(messageContent, false));
+                clientMessages.add(new Message(messageContent, Message.MessageType.TEXT));
             }
         });
     }

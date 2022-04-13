@@ -22,7 +22,7 @@ public class ClientSender implements Runnable {
                 clientMessages = App.getMessages();
                 if (clientMessages.size() > 0) {
                     Message mess = clientMessages.remove(0);
-                    oos.writeObject(new Message(mess.getContent(), mess.ifFile()));
+                    oos.writeObject(new Message(mess.getContent(), mess.getType()));
                     System.out.println("Send");
                     oos.reset();
                     oos.flush();
