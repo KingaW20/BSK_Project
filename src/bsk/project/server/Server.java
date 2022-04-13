@@ -8,25 +8,25 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
-    private static Message messFrom1 = new Message();
-    private static Message messFrom2 = new Message();
+    private static Message messFrom1;
+    private static Message messFrom2;
 
     public static void main(String[] args) {
 
         try(ServerSocket server = new ServerSocket(CONSTANTS.port)) {
             Socket socket1 = server.accept();
+            Socket socket2 = server.accept();
             System.out.println("Connected");
-            //Socket socket2 = server.accept();
             //try {
-            Thread receiver1 = new Thread(new Receiver(socket1, messFrom1, messFrom2));
-            //Thread receiver2 = new Thread(new Receiver(socket2, messFrom2, messFrom1));
-            Thread sender1 = new Thread(new Sender(socket1, messFrom1, messFrom2));
-            //Thread sender2 = new Thread(new Sender(socket2, messFrom2, messFrom1));
+            Thread receiver1 = new Thread(new Receiver(socket1, true));
+            Thread receiver2 = new Thread(new Receiver(socket2, false));
+            Thread sender1 = new Thread(new Sender(socket1, true));
+            Thread sender2 = new Thread(new Sender(socket2, false));
             //inne watki
             receiver1.start();
-            //receiver2.start();
+            receiver2.start();
             sender1.start();
-            //sender2.start();
+            sender2.start();
             //inne watki start
             runProtocol();
             //inne watki trzeba thread.join();
@@ -40,19 +40,23 @@ public class Server {
 
     }
 
-    public static void runProtocol() throws IOException //, ClassNotFoundException {
-    {
-        while(true) {
-            writeMess(messFrom1);
-            if (messFrom1.ifReadyToSend()) System.out.println("1");
-            if (messFrom2.ifReadyToSend()) System.out.println("2");
-            //messFrom1.setMessage(new Message());
-        }
+    public static void runProtocol() throws IOException {
+        while(true) {}
     }
 
-    public static void writeMess(Message mess) {
-        if (mess.ifReadyToSend()) {
-            System.out.println("Received mess: " + mess.getContent() + "\n");
+    public static Message getMessFrom(boolean firstClient) {
+        Message mess = firstClient ? messFrom1 : messFrom2;
+        return mess;
+    }
+
+    public static void setMessFrom(boolean firstClient, Message mess) {
+        if (firstClient) {
+            messFrom1 = mess;
+        } else {
+            messFrom2 = mess;
         }
+
+        if (messFrom1 != null) System.out.println("First message: " + messFrom1);
+        if (messFrom2 != null) System.out.println("Second message: " + messFrom2);
     }
 }
