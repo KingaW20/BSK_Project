@@ -20,6 +20,8 @@ public class Receiver implements Runnable {
         try {
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
 
+            int x = 100;
+
             while(true) {
                 Message mess = (Message) ois.readObject();
                 if (mess != null) {
