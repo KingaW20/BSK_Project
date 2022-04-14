@@ -28,16 +28,12 @@ public class Server {
             sender2.start();
             receiver2.start();
             sender1.start();
-            runProtocol();
+            while(true);
         } catch (IOException e) {
             e.printStackTrace();
             //System.exit(1);
         }
 
-    }
-
-    public static void runProtocol() throws IOException {
-        while(true) {}
     }
 
     public static ArrayList<Message> getMessagesFrom(boolean firstClient) {

@@ -1,5 +1,7 @@
 package bsk.project;
 
+import bsk.project.Encryption.Decryptor;
+import bsk.project.Encryption.Encryptor;
 import bsk.project.Messages.ContentMessage;
 import bsk.project.Messages.KeyMessage;
 
@@ -28,6 +30,8 @@ public class App {
     private static App singleton;
     private static ClientData clientData;
     private static ClientData clientData2;
+    private static Encryptor encryptor;
+    private static Decryptor decryptor;
 
     private static ArrayList<ContentMessage> clientMessages;
 
@@ -36,6 +40,8 @@ public class App {
         clientMessages = new ArrayList<>();
         communication.setLineWrap(true);
         input.setLineWrap(true);
+        encryptor = new Encryptor();
+        decryptor = new Decryptor();
         try {
             clientData = new ClientData(true, CONSTANTS.sessionKeySize);
             System.out.println("Key: " + clientData.getSessionKey().toString());
@@ -56,7 +62,9 @@ public class App {
                 if (cbcMode.isSelected()) encryptionMode = CONSTANTS.AesAlgCBCMode;
 
                 try {
-                    encryptMessage(new ContentMessage(messageContent, ContentMessage.MessageType.TEXT, encryptionMode));
+                    clientMessages.add(encryptor.encryptMessage(
+                            new ContentMessage(messageContent, ContentMessage.MessageType.TEXT, encryptionMode),
+                            clientData.getSessionKey(), clientData.getIvParameter()));
                 } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
                         InvalidKeyException | BadPaddingException | IllegalBlockSizeException ex) {
                     ex.printStackTrace();
@@ -78,15 +86,10 @@ public class App {
             Thread receiver = new Thread(new ClientReceiver(server));
             sender.start();
             receiver.start();
-            runProtocol();
+            while(true);
         } catch(IOException ex) {
             System.err.println(ex);
         }
-
-    }
-
-    public static void runProtocol() {
-        while(true) {}
     }
 
     public static ArrayList<ContentMessage> getMessages() {
@@ -97,7 +100,8 @@ public class App {
         try {
             if (mess.getType() == ContentMessage.MessageType.TEXT) {
                 singleton.communication.append("You encrypted: " + mess.getContent() + "\n");
-                singleton.communication.append("You decrypted: " + decryptMessage(mess).getContent() + "\n");
+                singleton.communication.append("You decrypted: " + decryptor.decryptMessage(
+                        mess, clientData2.getSessionKey(), clientData2.getIvParameter()).getContent() + "\n");
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
                 BadPaddingException | IllegalBlockSizeException e) {
@@ -110,54 +114,5 @@ public class App {
             clientData2.setSessionKey(mess.getKey());
             clientData2.setIv(mess.getIv());
         }
-    }
-
-    private static void encryptMessage(ContentMessage message)
-            throws NoSuchPaddingException, NoSuchAlgorithmException,
-            InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException {
-        String algorithm = message.getEncryptionMode();
-
-        if (algorithm != null) {
-            Cipher cipher = Cipher.getInstance(algorithm);
-
-            if (algorithm == CONSTANTS.AesAlgECBMode) {
-                cipher.init(Cipher.ENCRYPT_MODE, clientData.getSessionKey());
-            } else if (algorithm == CONSTANTS.AesAlgCBCMode) {
-                cipher.init(Cipher.ENCRYPT_MODE, clientData.getSessionKey(), clientData.getIvParameter());
-            }
-            System.out.println("Encrypt algorithm: " + algorithm);
-
-            byte[] cipherText = cipher.doFinal(message.getContent().getBytes());
-            String encryptedMessageContent = Base64.getEncoder().encodeToString(cipherText);
-            message.setContent(encryptedMessageContent);
-            clientMessages.add(message);
-        }
-    }
-
-    private static ContentMessage decryptMessage(ContentMessage message)
-            throws NoSuchPaddingException, NoSuchAlgorithmException,
-            InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        if (message.getType() == ContentMessage.MessageType.TEXT) {
-            String algorithm = message.getEncryptionMode();
-            System.out.println("Decrypt algorithm: " + algorithm);
-            Cipher cipher = Cipher.getInstance(algorithm);
-
-            if (algorithm.equals(CONSTANTS.AesAlgECBMode)) {
-                cipher.init(Cipher.DECRYPT_MODE, clientData2.getSessionKey());
-            } else if (algorithm.equals(CONSTANTS.AesAlgCBCMode)) {
-                try {
-                    cipher.init(Cipher.DECRYPT_MODE, clientData2.getSessionKey(), clientData2.getIvParameter());
-                } catch (InvalidAlgorithmParameterException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(message.getContent()));
-            message.setContent(new String(plainText));
-            return message;
-        }
-
-        return null;
     }
 }
