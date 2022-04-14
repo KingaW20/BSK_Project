@@ -8,11 +8,13 @@ import java.security.SecureRandom;
 
 public class ClientData {
     private SecretKey sessionKey;
+    private int sessionKeySize;
     private byte[] iv;
 
-    public ClientData(boolean generation) throws NoSuchAlgorithmException {
+    public ClientData(boolean generation, int sessionKeySize) throws NoSuchAlgorithmException {
+        this.sessionKeySize = sessionKeySize;
         if (generation) {
-            generateSessionKey(CONSTANTS.sessionKeySize);
+            sessionKey = generateKey(sessionKeySize);
             iv = generateIv();
         } else {
             sessionKey = null;
@@ -21,11 +23,13 @@ public class ClientData {
     }
 
     public SecretKey getSessionKey() { return sessionKey; }
+    public int getSessionKeySize() { return sessionKeySize; }
 
     public byte[] getIv() { return iv; }
     public IvParameterSpec getIvParameter() { return new IvParameterSpec(this.iv); }
 
     public void setSessionKey(SecretKey key) { this.sessionKey = key; }
+    public void setSessionKeySize(int size) { this.sessionKeySize = size; }
     public void setIv(byte[] iv) { this.iv = iv; }
 
     private byte[] generateIv() {
@@ -34,9 +38,9 @@ public class ClientData {
         return iv;
     }
 
-    private void generateSessionKey(int n) throws NoSuchAlgorithmException {
+    private SecretKey generateKey(int n) throws NoSuchAlgorithmException {
         KeyGenerator keyGenerator = KeyGenerator.getInstance(CONSTANTS.AesAlgName);
         keyGenerator.init(n);
-        sessionKey = keyGenerator.generateKey();
+        return keyGenerator.generateKey();
     }
 }

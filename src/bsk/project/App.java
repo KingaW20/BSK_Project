@@ -37,9 +37,9 @@ public class App {
         communication.setLineWrap(true);
         input.setLineWrap(true);
         try {
-            clientData = new ClientData(true);
+            clientData = new ClientData(true, CONSTANTS.sessionKeySize);
             System.out.println("Key: " + clientData.getSessionKey().toString());
-            clientData2 = new ClientData(false);
+            clientData2 = new ClientData(false, CONSTANTS.sessionKeySize);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }

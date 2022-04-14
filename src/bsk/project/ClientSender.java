@@ -46,8 +46,8 @@ public class ClientSender implements Runnable {
 
     private void sendSessionKey(ObjectOutputStream oos) {
         try {
-            oos.writeObject(new KeyMessage(clientData.getSessionKey(), clientData.getIv(),
-                    ContentMessage.MessageType.SESSION_KEY, null));
+            oos.writeObject(new KeyMessage(clientData.getSessionKey(), clientData.getSessionKeySize(),
+                    clientData.getIv(), ContentMessage.MessageType.SESSION_KEY, null));
             System.out.println("Key sended");
             oos.reset();
             oos.flush();
