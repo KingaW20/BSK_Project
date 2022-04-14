@@ -28,13 +28,14 @@ public class Sender implements Runnable {
                 messages = Server.getMessagesFrom(!firstClient);
                 if (messages.size() > 0) {
                     Message mess = messages.remove(0);
+                    oos.writeObject(mess);
+
                     if (mess instanceof ContentMessage) {
-                        oos.writeObject(new ContentMessage(((ContentMessage)mess).getContent(), mess.getType()));
                         System.out.println("Send");
                     } else if (mess instanceof KeyMessage) {
-                        oos.writeObject(new KeyMessage(((KeyMessage) mess).getKey(), mess.getType()));
                         System.out.println("Key send");
                     }
+
                     oos.reset();
                     oos.flush();
                     Server.setMessFrom(!firstClient, null);

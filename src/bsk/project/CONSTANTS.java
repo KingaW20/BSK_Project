@@ -6,6 +6,8 @@ public class CONSTANTS {
     public static String ipAddr = "192.168.1.40";       // w domu
 
     //encryption - sessionKey
-    public static String AesAlgName = "AES";        //AES tryb ECB
-    public static int sessionKeySize = 256;         //128, 192 or 256
+    public static String AesAlgName = "AES";                        //AES
+    public static String AesAlgECBMode = "AES";                     //AES tryb ECB
+    public static String AesAlgCBCMode = "AES/CBC/PKCS5Padding";    //AES tryb CBC
+    public static int sessionKeySize = 256;                         //128, 192 or 256
 }

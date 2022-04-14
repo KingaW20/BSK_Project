@@ -30,7 +30,7 @@ public class ClientSender implements Runnable {
                 clientMessages = App.getMessages();
                 if (clientMessages.size() > 0) {
                     ContentMessage mess = clientMessages.remove(0);
-                    oos.writeObject(new ContentMessage(mess.getContent(), mess.getType()));
+                    oos.writeObject(mess);
                     System.out.println("Send message: " + mess.getContent());
                     oos.reset();
                     oos.flush();
@@ -46,7 +46,8 @@ public class ClientSender implements Runnable {
 
     private void sendSessionKey(ObjectOutputStream oos) {
         try {
-            oos.writeObject(new KeyMessage(clientData.getSessionKey(), ContentMessage.MessageType.SESSION_KEY));
+            oos.writeObject(new KeyMessage(clientData.getSessionKey(), clientData.getIv(),
+                    ContentMessage.MessageType.SESSION_KEY, null));
             System.out.println("Key sended");
             oos.reset();
             oos.flush();

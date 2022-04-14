@@ -8,7 +8,7 @@ import java.security.SecureRandom;
 
 public class ClientData {
     private SecretKey sessionKey;
-    private IvParameterSpec iv;
+    private byte[] iv;
 
     public ClientData(boolean generation) throws NoSuchAlgorithmException {
         if (generation) {
@@ -22,14 +22,16 @@ public class ClientData {
 
     public SecretKey getSessionKey() { return sessionKey; }
 
-    public IvParameterSpec getIv() { return iv; }
+    public byte[] getIv() { return iv; }
+    public IvParameterSpec getIvParameter() { return new IvParameterSpec(this.iv); }
 
-    public void setSessionKey(SecretKey key) { sessionKey = key; }
+    public void setSessionKey(SecretKey key) { this.sessionKey = key; }
+    public void setIv(byte[] iv) { this.iv = iv; }
 
-    private IvParameterSpec generateIv() {
+    private byte[] generateIv() {
         byte[] iv = new byte[16];
         new SecureRandom().nextBytes(iv);
-        return new IvParameterSpec(iv);
+        return iv;
     }
 
     private void generateSessionKey(int n) throws NoSuchAlgorithmException {
