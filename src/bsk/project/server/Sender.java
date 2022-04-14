@@ -1,6 +1,8 @@
 package bsk.project.server;
 
-import bsk.project.Message;
+import bsk.project.Messages.ContentMessage;
+import bsk.project.Messages.KeyMessage;
+import bsk.project.Messages.Message;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -26,8 +28,14 @@ public class Sender implements Runnable {
                 messages = Server.getMessagesFrom(!firstClient);
                 if (messages.size() > 0) {
                     Message mess = messages.remove(0);
-                    oos.writeObject(new Message(mess.getContent(), mess.getType()));
-                    System.out.println("Send");
+                    oos.writeObject(mess);
+
+                    if (mess instanceof ContentMessage) {
+                        System.out.println("Send");
+                    } else if (mess instanceof KeyMessage) {
+                        System.out.println("Key send");
+                    }
+
                     oos.reset();
                     oos.flush();
                     Server.setMessFrom(!firstClient, null);

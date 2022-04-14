@@ -1,6 +1,8 @@
 package bsk.project.server;
 
-import bsk.project.Message;
+import bsk.project.Messages.ContentMessage;
+import bsk.project.Messages.KeyMessage;
+import bsk.project.Messages.Message;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -23,7 +25,9 @@ public class Receiver implements Runnable {
             while(true) {
                 Message mess = (Message) ois.readObject();
                 if (mess != null) {
-                    System.out.println("Received mess: " + mess.getContent());
+                    if (mess instanceof ContentMessage) System.out.println("Received mess: " + ((ContentMessage) mess).getContent());
+                    else if (mess instanceof KeyMessage) System.out.println("Received key: " + ((KeyMessage) mess).getKey());
+
                     Server.setMessFrom(firstClient, mess);
                 }
             }
