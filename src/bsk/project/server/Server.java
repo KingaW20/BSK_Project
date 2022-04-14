@@ -1,7 +1,7 @@
 package bsk.project.server;
 
 import bsk.project.CONSTANTS;
-import bsk.project.Message;
+import bsk.project.Messages.Message;
 
 import java.io.IOException;
 import java.net.ServerSocket;
