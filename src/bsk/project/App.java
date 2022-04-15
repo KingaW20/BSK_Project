@@ -16,7 +16,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Base64;
 
 public class App {
     private JPanel window;
@@ -43,9 +42,9 @@ public class App {
         encryptor = new Encryptor();
         decryptor = new Decryptor();
         try {
-            clientData = new ClientData(true, CONSTANTS.sessionKeySize);
+            clientData = new ClientData(true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
             System.out.println("Key: " + clientData.getSessionKey().toString());
-            clientData2 = new ClientData(false, CONSTANTS.sessionKeySize);
+            clientData2 = new ClientData(false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
