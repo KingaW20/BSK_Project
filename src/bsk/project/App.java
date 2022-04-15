@@ -5,13 +5,18 @@ import bsk.project.Messages.*;
 import bsk.project.Messages.Message.*;
 
 import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.*;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 
 public class App {
     private JPanel window;
@@ -77,7 +82,7 @@ public class App {
         frame.setVisible(true);
 
         try(Socket server = new Socket(CONSTANTS.ipAddr, CONSTANTS.port)) {
-            Thread sender = new Thread(new ClientSender(server, clientData));
+            Thread sender = new Thread(new ClientSender(server, clientData, clientData2));
             Thread receiver = new Thread(new ClientReceiver(server));
             sender.start();
             receiver.start();
@@ -93,10 +98,22 @@ public class App {
 
     public static void setMessage(ContentMessage mess) {
         try {
-            if (mess.getType() == ContentMessage.MessageType.TEXT) {
+            if (mess.getType() == MessageType.TEXT) {
                 singleton.communication.append("You encrypted: " + mess.getContent() + "\n");
                 singleton.communication.append("You decrypted: " + decryptor.decryptMessage(
                         mess, clientData2.getSessionKey(), clientData2.getIvParameter()).getContent() + "\n");
+            } else if (mess.getType() == MessageType.SESSION_KEY) {
+                System.out.println("Encrypted session key: " + mess.getContent());
+                byte[] encryptedPublicKeyBytes = Base64.getDecoder().decode(mess.getContent());
+                Cipher decryptCipher = Cipher.getInstance(CONSTANTS.RsaAlgName);
+                decryptCipher.init(Cipher.DECRYPT_MODE, clientData.getPrivateKey());
+                byte[] decryptedSessionKeyBytes = decryptCipher.doFinal(encryptedPublicKeyBytes);
+                SecretKey sessionKey = new SecretKeySpec(
+                        decryptedSessionKeyBytes, 0, decryptedSessionKeyBytes.length, CONSTANTS.AesAlgName);
+                System.out.println("Decrypted session key: " + sessionKey);
+
+                clientData2.setSessionKey(sessionKey);
+                //clientData2.setIv(mess.getIv());
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
                 BadPaddingException | IllegalBlockSizeException e) {
@@ -106,7 +123,8 @@ public class App {
 
     public static void setKeyMessage(KeyMessage mess) {
         if (mess.getType() == MessageType.SESSION_KEY) {
-            clientData2.setSessionKey((SecretKey) mess.getKey());
+            //clientData2.setSessionKey((SecretKey) mess.getKey());
+            System.out.println("Received Session key: " + mess.getKey());
             clientData2.setIv(mess.getIv());
         } else if (mess.getType() == MessageType.PUBLIC_KEY) {
             clientData2.setPrivatePublicKey(null, (PublicKey) mess.getKey());

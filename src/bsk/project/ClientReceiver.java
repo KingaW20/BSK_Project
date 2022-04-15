@@ -2,6 +2,7 @@ package bsk.project;
 
 import bsk.project.Messages.ContentMessage;
 import bsk.project.Messages.KeyMessage;
+import bsk.project.Messages.Message;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -46,13 +47,25 @@ public class ClientReceiver implements Runnable {
 
     private void getSessionKey(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         boolean keyMessageExists = false;
+        boolean keyMessageExists2 = false;
 
+        //TODO: delete
         while (!keyMessageExists) {
             KeyMessage keyMessage = (KeyMessage) ois.readObject();
             if (keyMessage != null) {
                 App.setKeyMessage(keyMessage);
                 keyMessageExists = true;
                 System.out.println("Session key received: " + keyMessage.getKey().toString());
+            }
+        }
+
+        while (!keyMessageExists2) {
+            ContentMessage keyMessage = (ContentMessage) ois.readObject();
+            if (keyMessage != null) {
+                if (keyMessage.getType().equals(Message.MessageType.SESSION_KEY)) System.out.println("session key");
+                App.setMessage(keyMessage);
+                keyMessageExists2 = true;
+                System.out.println("Encrypted session key received: " + keyMessage.getContent());
             }
         }
     }
