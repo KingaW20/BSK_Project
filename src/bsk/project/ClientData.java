@@ -59,7 +59,7 @@ public class ClientData {
     public IvParameterSpec getIvParameter() { return new IvParameterSpec(this.iv); }
 
     public void setKeyPair(KeyPair keyPair) { this.keyPair = keyPair; }
-    public void setPublicPrivateKey(PrivateKey privateKey, PublicKey publicKey) {
+    public void setPrivatePublicKey(PrivateKey privateKey, PublicKey publicKey) {
         this.keyPair = new KeyPair(publicKey, privateKey);
     }
     public void setKeyPairSize(int size) { this.keyPairSize = size; }

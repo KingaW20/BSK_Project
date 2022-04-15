@@ -1,20 +1,16 @@
 package bsk.project;
 
-import bsk.project.Encryption.Decryptor;
-import bsk.project.Encryption.Encryptor;
-import bsk.project.Messages.ContentMessage;
-import bsk.project.Messages.KeyMessage;
+import bsk.project.Encryption.*;
+import bsk.project.Messages.*;
+import bsk.project.Messages.Message.*;
 
 import javax.crypto.*;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.IOException;
 import java.net.Socket;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.util.ArrayList;
 
 public class App {
@@ -109,9 +105,11 @@ public class App {
     }
 
     public static void setKeyMessage(KeyMessage mess) {
-        if (mess.getType() == ContentMessage.MessageType.SESSION_KEY) {
-            clientData2.setSessionKey(mess.getKey());
+        if (mess.getType() == MessageType.SESSION_KEY) {
+            clientData2.setSessionKey((SecretKey) mess.getKey());
             clientData2.setIv(mess.getIv());
+        } else if (mess.getType() == MessageType.PUBLIC_KEY) {
+            clientData2.setPrivatePublicKey(null, (PublicKey) mess.getKey());
         }
     }
 }

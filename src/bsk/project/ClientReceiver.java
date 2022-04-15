@@ -5,6 +5,7 @@ import bsk.project.Messages.KeyMessage;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class ClientReceiver implements Runnable {
@@ -19,6 +20,7 @@ public class ClientReceiver implements Runnable {
         try {
             ObjectInputStream ois = new ObjectInputStream(server.getInputStream());
 
+            getPublicKey(ois);
             getSessionKey(ois);
             getMessages(ois);
 
@@ -26,6 +28,19 @@ public class ClientReceiver implements Runnable {
 //        Thread.currentThread().interrupt();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void getPublicKey(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        boolean keyMessageExists = false;
+
+        while (!keyMessageExists) {
+            KeyMessage keyMessage = (KeyMessage) ois.readObject();
+            if (keyMessage != null) {
+                App.setKeyMessage(keyMessage);
+                keyMessageExists = true;
+                System.out.println("Public key received: " + keyMessage.getKey().toString());
+            }
         }
     }
 
@@ -37,7 +52,7 @@ public class ClientReceiver implements Runnable {
             if (keyMessage != null) {
                 App.setKeyMessage(keyMessage);
                 keyMessageExists = true;
-                System.out.println("Key received: " + keyMessage.getKey().toString());
+                System.out.println("Session key received: " + keyMessage.getKey().toString());
             }
         }
     }

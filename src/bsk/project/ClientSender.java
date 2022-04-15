@@ -24,6 +24,7 @@ public class ClientSender implements Runnable {
         try {
             ObjectOutputStream oos = new ObjectOutputStream(server.getOutputStream());
 
+            sendPublicKey(oos);
             sendSessionKey(oos);
             sendMessages(oos);
 
@@ -34,10 +35,18 @@ public class ClientSender implements Runnable {
         }
     }
 
+    private void sendPublicKey(ObjectOutputStream oos) throws IOException {
+        oos.writeObject(new KeyMessage(clientData.getPublicKey(), clientData.getKeyPairSize(), null,
+                ContentMessage.MessageType.PUBLIC_KEY, null));
+        System.out.println("Public key sended: " + clientData.getPublicKey());
+        oos.reset();
+        oos.flush();
+    }
+
     private void sendSessionKey(ObjectOutputStream oos) throws IOException {
         oos.writeObject(new KeyMessage(clientData.getSessionKey(), clientData.getSessionKeySize(),
                 clientData.getIv(), ContentMessage.MessageType.SESSION_KEY, null));
-        System.out.println("Key sended");
+        System.out.println("Session key sended: " + clientData.getSessionKey());
         oos.reset();
         oos.flush();
     }
