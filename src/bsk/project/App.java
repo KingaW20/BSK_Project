@@ -41,8 +41,10 @@ public class App {
         encryptor = new Encryptor();
         decryptor = new Decryptor();
         try {
-            clientData = new ClientData(userName, true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
-            clientData2 = new ClientData(null, false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
+            clientData = new ClientData(
+                    userName, true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize, CONSTANTS.localKeySize);
+            clientData2 = new ClientData(
+                    null, false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize, CONSTANTS.localKeySize);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
             e.printStackTrace();
         }
