@@ -31,9 +31,9 @@ public class Sender implements Runnable {
                     oos.writeObject(mess);
 
                     if (mess instanceof ContentMessage) {
-                        System.out.println("Send");
+                        System.out.println("Send message: " + ((ContentMessage) mess).getContent());
                     } else if (mess instanceof KeyMessage) {
-                        System.out.println("Key send");
+                        System.out.println("Key send: " + ((KeyMessage) mess).getKey());
                     }
 
                     oos.reset();

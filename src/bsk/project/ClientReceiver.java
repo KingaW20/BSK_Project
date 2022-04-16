@@ -40,32 +40,20 @@ public class ClientReceiver implements Runnable {
             if (keyMessage != null) {
                 App.setKeyMessage(keyMessage);
                 keyMessageExists = true;
-                System.out.println("Public key received: " + keyMessage.getKey().toString());
+                System.out.println("ClientReceiver - public key received: " + keyMessage.getKey().toString());
             }
         }
     }
 
     private void getSessionKey(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         boolean keyMessageExists = false;
-        boolean keyMessageExists2 = false;
 
-        //TODO: delete
         while (!keyMessageExists) {
-            KeyMessage keyMessage = (KeyMessage) ois.readObject();
-            if (keyMessage != null) {
-                App.setKeyMessage(keyMessage);
-                keyMessageExists = true;
-                System.out.println("Session key received: " + keyMessage.getKey().toString());
-            }
-        }
-
-        while (!keyMessageExists2) {
             ContentMessage keyMessage = (ContentMessage) ois.readObject();
             if (keyMessage != null) {
-                if (keyMessage.getType().equals(Message.MessageType.SESSION_KEY)) System.out.println("session key");
+                System.out.println("ClientReceiver - encrypted session key received: " + keyMessage.getContent());
                 App.setMessage(keyMessage);
-                keyMessageExists2 = true;
-                System.out.println("Encrypted session key received: " + keyMessage.getContent());
+                keyMessageExists = true;
             }
         }
     }
@@ -74,7 +62,7 @@ public class ClientReceiver implements Runnable {
         while(true) {
             ContentMessage mess = (ContentMessage) ois.readObject();
             if (mess != null) {
-                System.out.println("Message received: " + mess.getContent());
+                System.out.println("CilentReceiver - encrypted message received: " + mess.getContent());
                 App.setMessage(mess);
             }
         }

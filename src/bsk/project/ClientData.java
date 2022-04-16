@@ -1,23 +1,12 @@
 package bsk.project;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.*;
+import java.nio.file.*;
 import java.security.*;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.EncodedKeySpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Random;
+import java.security.interfaces.*;
+import java.security.spec.*;
 
 public class ClientData {
     private KeyPair keyPair;
@@ -30,11 +19,13 @@ public class ClientData {
     private int sessionKeySize;
     private byte[] iv;
 
-    public ClientData(boolean generation, int sessionKeySize, int keyPairSize) throws NoSuchAlgorithmException {
+    public ClientData(boolean generation, int sessionKeySize, int keyPairSize)
+            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
         this.sessionKeySize = sessionKeySize;
         if (generation) {
-            sessionKey = generateKey(sessionKeySize);
+            sessionKey = generateKey(sessionKeySize, CONSTANTS.AesAlgName);
             iv = generateIv();
+            //TODO: correct to user name instead of UUID
             path = CONSTANTS.keyPath + java.util.UUID.randomUUID().toString();
             privateKeyPath = path + "/private.key";
             publicKeyPath = path + "/public.key";
@@ -68,44 +59,34 @@ public class ClientData {
     public void setIv(byte[] iv) { this.iv = iv; }
 
     private byte[] generateIv() {
-        byte[] iv = new byte[16];
+        byte[] iv = new byte[CONSTANTS.ivSize];
         new SecureRandom().nextBytes(iv);
+        System.out.println("ClientData - iv generated: " + iv);
         return iv;
     }
 
-    private SecretKey generateKey(int n) throws NoSuchAlgorithmException {
-        KeyGenerator keyGenerator = KeyGenerator.getInstance(CONSTANTS.AesAlgName);
-        keyGenerator.init(n);
-        return keyGenerator.generateKey();
+    private SecretKey generateKey(int size, String algorithmName) throws NoSuchAlgorithmException {
+        KeyGenerator keyGenerator = KeyGenerator.getInstance(algorithmName);
+        keyGenerator.init(size);
+        //return keyGenerator.generateKey();
+
+        SecretKey key = keyGenerator.generateKey();
+        System.out.println("ClientData - session key generated: " + key);
+        return key;
     }
 
-    private KeyPair generateKeyPair(int size, String algorithm) throws NoSuchAlgorithmException {
-        try {
-            KeyPair kp = readKeys(algorithm);
-            if (kp != null) return kp;
-        } catch (IOException | InvalidKeySpecException e) {
-            e.printStackTrace();
+    private KeyPair generateKeyPair(int size, String algorithm)
+            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+        // if keys exist, read them
+        KeyPair kp = readKeys(algorithm);
+        if (kp != null) {
+            System.out.println("ClientData - keyPair readed!");
+            return kp;
         }
 
-        // if keys not exist, generate new ones
-        System.out.println("KeyPair generation!");
-        KeyPairGenerator generator = KeyPairGenerator.getInstance(CONSTANTS.RsaAlgName);
-        generator.initialize(size);
-        KeyPair keyPair = generator.generateKeyPair();
-        try {
-            if (!Files.exists(Paths.get(CONSTANTS.keyPath))) Files.createDirectory(Paths.get(CONSTANTS.keyPath));
-            if (!Files.exists(Paths.get(path))) Files.createDirectory(Paths.get(path));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try (FileOutputStream fosPub = new FileOutputStream(publicKeyPath);
-                FileOutputStream fosPriv = new FileOutputStream(privateKeyPath)) {
-            fosPub.write(keyPair.getPublic().getEncoded());
-            fosPriv.write(keyPair.getPrivate().getEncoded());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return keyPair;
+        // if keys do not exist, generate new ones
+        System.out.println("ClientData - keyPair generation!");
+        return generateNewKeyPair(size);
     }
 
     private KeyPair readKeys(String algorithm) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
@@ -119,7 +100,7 @@ public class ClientData {
             byte[] publicKeyBytes = Files.readAllBytes(publicKeyFile.toPath());
             EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
             publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
-            System.out.println("Public key: " + publicKey);
+            System.out.println("ClientData - public key readed: " + publicKey);
         }
 
         File privateKeyFile = new File(privateKeyPath);
@@ -127,14 +108,39 @@ public class ClientData {
             byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath());
             PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
             privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
-            System.out.println("Private key: " + privateKey);
+            System.out.println("ClientData - private key readed: " + privateKey);
         }
 
         if (publicKey != null && privateKey != null) {
-            System.out.println("Found!");
+            System.out.println("ClientData - keys founded!");
             return new KeyPair(publicKey, privateKey);
         }
 
         return null;
+    }
+
+    private KeyPair generateNewKeyPair(int keySize)
+            throws NoSuchAlgorithmException, IOException {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance(CONSTANTS.RsaAlgName);
+        generator.initialize(keySize);
+        KeyPair keyPair = generator.generateKeyPair();
+        if (!Files.exists(Paths.get(CONSTANTS.keyPath))) {
+            Files.createDirectory(Paths.get(CONSTANTS.keyPath));
+        }
+        if (!Files.exists(Paths.get(path))) {
+            Files.createDirectory(Paths.get(path));
+        }
+
+        try (FileOutputStream fosPub = new FileOutputStream(publicKeyPath);
+             FileOutputStream fosPriv = new FileOutputStream(privateKeyPath)) {
+            fosPub.write(keyPair.getPublic().getEncoded());
+            System.out.println("ClientData - public key generated: " + keyPair.getPublic());
+            fosPriv.write(keyPair.getPrivate().getEncoded());
+            System.out.println("ClientData - private key generated: " + keyPair.getPrivate());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return keyPair;
     }
 }

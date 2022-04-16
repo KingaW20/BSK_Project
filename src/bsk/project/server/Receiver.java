@@ -25,8 +25,11 @@ public class Receiver implements Runnable {
             while(true) {
                 Message mess = (Message) ois.readObject();
                 if (mess != null) {
-                    if (mess instanceof ContentMessage) System.out.println("Received mess: " + ((ContentMessage) mess).getContent());
-                    else if (mess instanceof KeyMessage) System.out.println("Received key: " + ((KeyMessage) mess).getKey());
+                    if (mess instanceof ContentMessage) {
+                        System.out.println("Received mess: " + ((ContentMessage) mess).getContent());
+                    } else if (mess instanceof KeyMessage) {
+                        System.out.println("Received key: " + ((KeyMessage) mess).getKey());
+                    }
 
                     Server.setMessFrom(firstClient, mess);
                 }

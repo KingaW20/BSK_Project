@@ -6,8 +6,8 @@ public class ContentMessage extends Message implements Serializable {
 
     private String content;
 
-    public ContentMessage(String content, MessageType type, String encryptionMode) {
-        super(type, encryptionMode);
+    public ContentMessage(String content, MessageType type, Algorithm algorithm) {
+        super(type, algorithm);
         this.content = content;
     }
 
@@ -18,6 +18,5 @@ public class ContentMessage extends Message implements Serializable {
     public void setMessage(ContentMessage mess) {
         this.content = mess.getContent();
         this.type = mess.getType();
-        this.encryptionMode = mess.getEncryptionMode();
     }
 }

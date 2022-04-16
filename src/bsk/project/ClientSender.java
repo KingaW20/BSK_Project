@@ -1,27 +1,21 @@
 package bsk.project;
 
-import bsk.project.Messages.ContentMessage;
-import bsk.project.Messages.KeyMessage;
-import bsk.project.Messages.Message;
+import bsk.project.Encryption.Encryptor;
+import bsk.project.Messages.*;
+import bsk.project.Messages.Message.*;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import javax.crypto.*;
+import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Base64;
+import java.security.*;
+import java.util.*;
 
 public class ClientSender implements Runnable {
     private static ArrayList<ContentMessage> clientMessages;
     private Socket server;
     private ClientData clientData;
     private ClientData clientData2;
+    private static Encryptor encryptor;
 
     public ClientSender(Socket server, ClientData clientData, ClientData clientData2) {
         this.server = server;
@@ -41,50 +35,40 @@ public class ClientSender implements Runnable {
 //        oos.close();
 //        Thread.currentThread().interrupt();
         } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
-                IllegalBlockSizeException | BadPaddingException e) {
+                IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
         }
     }
 
     private void sendPublicKey(ObjectOutputStream oos) throws IOException {
-        oos.writeObject(new KeyMessage(clientData.getPublicKey(), clientData.getKeyPairSize(), null,
-                ContentMessage.MessageType.PUBLIC_KEY, null));
-        System.out.println("Public key sended: " + clientData.getPublicKey());
+        oos.writeObject(new KeyMessage(
+                clientData.getPublicKey(), ContentMessage.MessageType.PUBLIC_KEY, null));
+        System.out.println("ClientSender - public key sended: " + clientData.getPublicKey());
         oos.reset();
         oos.flush();
     }
 
     private void sendSessionKey(ObjectOutputStream oos) throws IOException, NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher encryptCipher = Cipher.getInstance(CONSTANTS.RsaAlgName);
+            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException,
+            InvalidAlgorithmParameterException {
         boolean sended = false;
 
         while (!sended) {
+            encryptor = App.getEncryptor();
             if (clientData2.getKeyPair() != null) {
-                encryptCipher.init(Cipher.ENCRYPT_MODE, clientData2.getPublicKey());
+                ContentMessage contentMessage = encryptor.encryptMessage(
+                        new KeyMessage(clientData.getSessionKey(), MessageType.SESSION_KEY,
+                                new Algorithm(CONSTANTS.RsaAlgName, clientData.getSessionKeySize(), null)),
+                        clientData2.getPublicKey());
 
-                byte[] sessionKeyBytes = clientData.getSessionKey().getEncoded();
-                byte[] encryptedSessionKeyBytes = encryptCipher.doFinal(sessionKeyBytes);
-                String encryptedSessionKeyString = Base64.getEncoder().encodeToString(encryptedSessionKeyBytes);
-
-                //TODO: delete
-                oos.writeObject(new KeyMessage(clientData.getSessionKey(), clientData.getSessionKeySize(),
-                        clientData.getIv(), ContentMessage.MessageType.SESSION_KEY, null));
-                System.out.println("Session key sended: " + clientData.getSessionKey());
-                oos.reset();
-                oos.flush();
-
-                oos.writeObject(new ContentMessage(
-                        encryptedSessionKeyString, Message.MessageType.SESSION_KEY, null));
-                System.out.println("Encrypted session key sended: " + encryptedSessionKeyString);
+                oos.writeObject(contentMessage);
+                System.out.println("ClientSender - encrypted session key sended: " + contentMessage.getContent());
                 oos.reset();
                 oos.flush();
 
                 sended = true;
             }
         }
-
-        System.out.println("Ended");
     }
 
     private void sendMessages(ObjectOutputStream oos) throws IOException {
@@ -93,7 +77,7 @@ public class ClientSender implements Runnable {
             if (clientMessages.size() > 0) {
                 ContentMessage mess = clientMessages.remove(0);
                 oos.writeObject(mess);
-                System.out.println("Send message: " + mess.getContent());
+                System.out.println("ClientSender - encrypted message sended: " + mess.getContent());
                 oos.reset();
                 oos.flush();
             }
