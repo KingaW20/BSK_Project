@@ -102,6 +102,7 @@ public class ClientData {
             publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
             System.out.println("ClientData - public key readed: " + publicKey);
         }
+        int x = 1;
 
         File privateKeyFile = new File(privateKeyPath);
         if (Files.exists(Paths.get(privateKeyPath))) {
