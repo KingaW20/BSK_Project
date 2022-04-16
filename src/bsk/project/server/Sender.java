@@ -1,11 +1,8 @@
 package bsk.project.server;
 
-import bsk.project.Messages.ContentMessage;
-import bsk.project.Messages.KeyMessage;
-import bsk.project.Messages.Message;
+import bsk.project.Messages.*;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -13,6 +10,7 @@ public class Sender implements Runnable {
     private Socket socket;
     private boolean firstClient;
     private ArrayList<Message> messages;
+    private String userName;
 
     public Sender(Socket socket, boolean firstClient) {
         this.socket = socket;
@@ -24,6 +22,16 @@ public class Sender implements Runnable {
         try {
             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 
+            boolean userNameSended = false;
+            while (!userNameSended) {
+                userName = Server.getUserName(firstClient);
+                if (userName != null) {
+                    oos.writeObject(userName);
+                    userNameSended = true;
+                    System.out.println("User name send: " + userName);
+                }
+            }
+
             while(true) {
                 messages = Server.getMessagesFrom(!firstClient);
                 if (messages.size() > 0) {
@@ -31,7 +39,7 @@ public class Sender implements Runnable {
                     oos.writeObject(mess);
 
                     if (mess instanceof ContentMessage) {
-                        System.out.println("Send message: " + ((ContentMessage) mess).getContent());
+                        System.out.println("Message send: " + ((ContentMessage) mess).getContent());
                     } else if (mess instanceof KeyMessage) {
                         System.out.println("Key send: " + ((KeyMessage) mess).getKey());
                     }

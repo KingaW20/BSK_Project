@@ -25,6 +25,7 @@ public class App {
     private JRadioButton ecbMode;
     private JRadioButton cbcMode;
     private static App singleton;
+    private static String userName;
     private static ClientData clientData;
     private static ClientData clientData2;
     private static Decryptor decryptor;
@@ -40,8 +41,8 @@ public class App {
         encryptor = new Encryptor();
         decryptor = new Decryptor();
         try {
-            clientData = new ClientData(true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
-            clientData2 = new ClientData(false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
+            clientData = new ClientData(userName, true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
+            clientData2 = new ClientData(null, false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
             e.printStackTrace();
         }
@@ -50,7 +51,7 @@ public class App {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String messageContent = input.getText();
-                communication.append("Me: " + messageContent + "\n");
+                communication.append(clientData.getUserName() + ": " + messageContent + "\n");
                 input.setText("");
 
                 String encryptionMode = CONSTANTS.AesAlgECBMode;
@@ -75,7 +76,15 @@ public class App {
     }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("App");
+        JFrame logInPanelFrame = new JFrame("App");
+        logInPanelFrame.setSize(300, 200);
+        LogInPanel logInPanel = new LogInPanel(logInPanelFrame);
+        logInPanelFrame.setContentPane(logInPanel.logInPanel);
+
+        while(userName == null) { userName = logInPanel.getUserName(); }
+        logInPanelFrame.dispose();
+
+        JFrame frame = new JFrame("App " + userName);
         frame.setSize(new Dimension(800, 600));
         frame.setLocation(0, 0);
         frame.setContentPane(new App().window);
@@ -101,12 +110,17 @@ public class App {
         return encryptor;
     }
 
+    public static void setUserNameMessage(String name) {
+        clientData2.setUserName(name);
+    }
+
     public static void setMessage(ContentMessage mess) {
         try {
             if (mess.getType().equals(MessageType.TEXT)) {
-                singleton.communication.append("You encrypted: " + mess.getContent() + "\n");
-                singleton.communication.append("You decrypted: " + ((ContentMessage)decryptor.decryptMessage(
-                        mess, clientData2.getSessionKey())).getContent() + "\n");
+                singleton.communication.append(clientData2.getUserName() + " encrypted: " + mess.getContent() + "\n");
+                singleton.communication.append(clientData2.getUserName() + " decrypted: " +
+                        ((ContentMessage)decryptor.decryptMessage(
+                                mess, clientData2.getSessionKey())).getContent() + "\n");
             } else if (mess.getType().equals(MessageType.SESSION_KEY)) {
                 clientData2.setSessionKey((SecretKey) ((KeyMessage)
                         decryptor.decryptMessage(mess, clientData.getPrivateKey())).getKey());

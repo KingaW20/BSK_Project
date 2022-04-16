@@ -4,13 +4,14 @@ import bsk.project.CONSTANTS;
 import bsk.project.Messages.Message;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.ArrayList;
 
 public class Server {
     private static ArrayList<Message> messFrom1;
     private static ArrayList<Message> messFrom2;
+    private static String userName1;
+    private static String userName2;
 
     public static void main(String[] args) {
         messFrom1 = new ArrayList<>();
@@ -37,10 +38,18 @@ public class Server {
     }
 
     public static ArrayList<Message> getMessagesFrom(boolean firstClient) {
+        return firstClient ? messFrom1 : messFrom2;
+    }
+
+    public static String getUserName(boolean firstClient) {
+        return firstClient ? userName1 : userName2;
+    }
+
+    public static void setUserName(boolean firstClient, String userName) {
         if (firstClient) {
-            return messFrom1;
+            userName1 = userName;
         } else {
-            return messFrom2;
+            userName2 = userName;
         }
     }
 

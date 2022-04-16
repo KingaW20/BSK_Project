@@ -9,6 +9,7 @@ import java.security.interfaces.*;
 import java.security.spec.*;
 
 public class ClientData {
+    private String userName;
     private KeyPair keyPair;
     private int keyPairSize;
     private String path;
@@ -19,27 +20,26 @@ public class ClientData {
     private int sessionKeySize;
     private byte[] iv;
 
-    public ClientData(boolean generation, int sessionKeySize, int keyPairSize)
+    public ClientData(String userName, boolean generation, int sessionKeySize, int keyPairSize)
             throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
         this.sessionKeySize = sessionKeySize;
+        this.userName = userName;
+        path = CONSTANTS.keyPath + userName;
+        privateKeyPath = path + "/private.key";
+        publicKeyPath = path + "/public.key";
+
         if (generation) {
             sessionKey = generateKey(sessionKeySize, CONSTANTS.AesAlgName);
             iv = generateIv();
-            //TODO: correct to user name instead of UUID
-            path = CONSTANTS.keyPath + java.util.UUID.randomUUID().toString();
-            privateKeyPath = path + "/private.key";
-            publicKeyPath = path + "/public.key";
             keyPair = generateKeyPair(keyPairSize, CONSTANTS.RsaAlgName);
         } else {
             sessionKey = null;
             iv = null;
-            path = null;
-            privateKeyPath = null;
-            publicKeyPath = null;
             keyPair = null;
         }
     }
 
+    public String getUserName() { return userName; }
     public KeyPair getKeyPair() { return keyPair; }
     public int getKeyPairSize() { return keyPairSize; }
     public PrivateKey getPrivateKey() { return keyPair.getPrivate(); }
@@ -49,6 +49,7 @@ public class ClientData {
     public byte[] getIv() { return iv; }
     public IvParameterSpec getIvParameter() { return new IvParameterSpec(this.iv); }
 
+    public void setUserName(String userName) { this.userName = userName; }
     public void setKeyPair(KeyPair keyPair) { this.keyPair = keyPair; }
     public void setPrivatePublicKey(PrivateKey privateKey, PublicKey publicKey) {
         this.keyPair = new KeyPair(publicKey, privateKey);
@@ -90,8 +91,8 @@ public class ClientData {
     }
 
     private KeyPair readKeys(String algorithm) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
-        RSAPublicKey publicKey = null;
-        RSAPrivateKey privateKey = null;
+        PublicKey publicKey = null;
+        PrivateKey privateKey = null;
 
         KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
 
@@ -99,7 +100,7 @@ public class ClientData {
         if (Files.exists(Paths.get(publicKeyPath))) {
             byte[] publicKeyBytes = Files.readAllBytes(publicKeyFile.toPath());
             EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
-            publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
+            publicKey = keyFactory.generatePublic(publicKeySpec);
             System.out.println("ClientData - public key readed: " + publicKey);
         }
 
@@ -107,7 +108,7 @@ public class ClientData {
         if (Files.exists(Paths.get(privateKeyPath))) {
             byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath());
             PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-            privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
+            privateKey = keyFactory.generatePrivate(privateKeySpec);
             System.out.println("ClientData - private key readed: " + privateKey);
         }
 

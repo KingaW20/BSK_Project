@@ -1,8 +1,6 @@
 package bsk.project.server;
 
-import bsk.project.Messages.ContentMessage;
-import bsk.project.Messages.KeyMessage;
-import bsk.project.Messages.Message;
+import bsk.project.Messages.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -21,6 +19,16 @@ public class Receiver implements Runnable {
     public void run() {
         try {
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+
+            boolean userNameReceived = false;
+            while (!userNameReceived) {
+                String userName = (String) ois.readObject();
+                if (userName != null) {
+                    Server.setUserName(!firstClient, userName);
+                    System.out.println("Received user name: " + userName);
+                    userNameReceived = true;
+                }
+            }
 
             while(true) {
                 Message mess = (Message) ois.readObject();

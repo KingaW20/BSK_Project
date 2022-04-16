@@ -28,6 +28,12 @@ public class ClientSender implements Runnable {
         try {
             ObjectOutputStream oos = new ObjectOutputStream(server.getOutputStream());
 
+            //sending user name
+            oos.writeObject(clientData.getUserName());
+            System.out.println("ClientSender - user name sended: " + clientData.getUserName());
+            oos.reset();
+            oos.flush();
+
             sendPublicKey(oos);
             sendSessionKey(oos);
             sendMessages(oos);

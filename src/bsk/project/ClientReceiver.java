@@ -1,12 +1,8 @@
 package bsk.project;
 
-import bsk.project.Messages.ContentMessage;
-import bsk.project.Messages.KeyMessage;
-import bsk.project.Messages.Message;
+import bsk.project.Messages.*;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 
 public class ClientReceiver implements Runnable {
@@ -21,6 +17,7 @@ public class ClientReceiver implements Runnable {
         try {
             ObjectInputStream ois = new ObjectInputStream(server.getInputStream());
 
+            getUserName(ois);
             getPublicKey(ois);
             getSessionKey(ois);
             getMessages(ois);
@@ -29,6 +26,16 @@ public class ClientReceiver implements Runnable {
 //        Thread.currentThread().interrupt();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void getUserName(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        String userName = (String) ois.readObject();
+        if (userName != null) {
+            App.setUserNameMessage(userName);
+            System.out.println("ClientReceiver - user name received: " + userName);
+        } else {
+            System.out.println("Name empty");
         }
     }
 
