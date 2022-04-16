@@ -13,8 +13,8 @@ public class ClientData {
     private KeyPair keyPair;
     private int keyPairSize;
     private String path;
-    private String privateKeyPath;
-    private String publicKeyPath;
+    private String privateKeyFilePath;
+    private String publicKeyFilePath;
 
     private SecretKey sessionKey;
     private int sessionKeySize;
@@ -25,8 +25,8 @@ public class ClientData {
         this.sessionKeySize = sessionKeySize;
         this.userName = userName;
         path = CONSTANTS.keyPath + userName;
-        privateKeyPath = path + "/private.key";
-        publicKeyPath = path + "/public.key";
+        privateKeyFilePath = path + "\\Private\\private.key";
+        publicKeyFilePath = path + "\\Public\\public.key";
 
         if (generation) {
             sessionKey = generateKey(sessionKeySize, CONSTANTS.AesAlgName);
@@ -96,16 +96,16 @@ public class ClientData {
 
         KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
 
-        File publicKeyFile = new File(publicKeyPath);
-        if (Files.exists(Paths.get(publicKeyPath))) {
+        File publicKeyFile = new File(publicKeyFilePath);
+        if (Files.exists(Paths.get(publicKeyFilePath))) {
             byte[] publicKeyBytes = Files.readAllBytes(publicKeyFile.toPath());
             EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
             publicKey = keyFactory.generatePublic(publicKeySpec);
             System.out.println("ClientData - public key readed: " + publicKey);
         }
 
-        File privateKeyFile = new File(privateKeyPath);
-        if (Files.exists(Paths.get(privateKeyPath))) {
+        File privateKeyFile = new File(privateKeyFilePath);
+        if (Files.exists(Paths.get(privateKeyFilePath))) {
             byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath());
             PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
             privateKey = keyFactory.generatePrivate(privateKeySpec);
@@ -121,19 +121,16 @@ public class ClientData {
     }
 
     private KeyPair generateNewKeyPair(int keySize)
-            throws NoSuchAlgorithmException, IOException {
+            throws NoSuchAlgorithmException {
         KeyPairGenerator generator = KeyPairGenerator.getInstance(CONSTANTS.RsaAlgName);
         generator.initialize(keySize);
         KeyPair keyPair = generator.generateKeyPair();
-        if (!Files.exists(Paths.get(CONSTANTS.keyPath))) {
-            Files.createDirectory(Paths.get(CONSTANTS.keyPath));
-        }
-        if (!Files.exists(Paths.get(path))) {
-            Files.createDirectory(Paths.get(path));
-        }
 
-        try (FileOutputStream fosPub = new FileOutputStream(publicKeyPath);
-             FileOutputStream fosPriv = new FileOutputStream(privateKeyPath)) {
+        //create Directory
+        createDirectory();
+
+        try (FileOutputStream fosPub = new FileOutputStream(publicKeyFilePath);
+             FileOutputStream fosPriv = new FileOutputStream(privateKeyFilePath)) {
             fosPub.write(keyPair.getPublic().getEncoded());
             System.out.println("ClientData - public key generated: " + keyPair.getPublic());
             fosPriv.write(keyPair.getPrivate().getEncoded());
@@ -143,5 +140,18 @@ public class ClientData {
         }
 
         return keyPair;
+    }
+
+    private void createDirectory() {
+        File publicKeyFile = new File(publicKeyFilePath);
+        File parent = publicKeyFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IllegalStateException("Couldn't create dir: " + parent);
+        }
+        File privateKeyFile = new File(privateKeyFilePath);
+        File parent2 = privateKeyFile.getParentFile();
+        if (parent2 != null && !parent2.exists() && !parent2.mkdirs()) {
+            throw new IllegalStateException("Couldn't create dir: " + parent);
+        }
     }
 }

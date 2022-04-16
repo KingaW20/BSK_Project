@@ -15,5 +15,5 @@ public class CONSTANTS {
     //encryption - public, private keys
     public static String RsaAlgName = "RSA";                        //RSA
     public static int keyPairSize = 2048;
-    public static String keyPath = "keys/";
+    public static String keyPath = "keys\\";
 }
