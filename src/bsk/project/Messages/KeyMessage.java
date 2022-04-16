@@ -1,34 +1,23 @@
 package bsk.project.Messages;
 
-import javax.crypto.SecretKey;
 import java.io.Serializable;
+import java.security.Key;
 
 public class KeyMessage extends Message implements Serializable {
 
-    private SecretKey key;
-    private int sessionKeySize;
-    private byte[] iv;
+    private Key key;
 
-    public KeyMessage(SecretKey key, int sessionKeySize, byte[] iv, MessageType type, String encryptionMode) {
-        super(type, encryptionMode);
+    public KeyMessage(Key key, MessageType type, Algorithm algorithm) {
+        super(type, algorithm);
         this.key = key;
-        this.sessionKeySize = sessionKeySize;
-        this.iv = iv;
     }
 
-    public SecretKey getKey() { return this.key; }
-    public byte[] getIv() { return this.iv; }
-    public int getSessionKeySize() { return this.sessionKeySize; }
+    public Key getKey() { return this.key; }
 
-    public void setKey(SecretKey key) { this.key = key; }
-    public void setIv(byte[] iv) { this.iv = iv; }
-    public void setSessionKeySize(int sessionKeySize) { this.sessionKeySize = sessionKeySize; }
+    public void setKey(Key key) { this.key = key; }
 
     public void setMessage(KeyMessage mess) {
         this.key = mess.getKey();
-        this.sessionKeySize = mess.getSessionKeySize();
-        this.iv = mess.getIv();
         this.type = mess.getType();
-        this.encryptionMode = mess.getEncryptionMode();
     }
 }

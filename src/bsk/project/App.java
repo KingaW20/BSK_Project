@@ -1,20 +1,19 @@
 package bsk.project;
 
-import bsk.project.Messages.ContentMessage;
-import bsk.project.Messages.KeyMessage;
+import bsk.project.Encryption.*;
+import bsk.project.Messages.*;
+import bsk.project.Messages.Message.*;
 
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.IOException;
 import java.net.Socket;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Base64;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.util.*;
 
 public class App {
     private JPanel window;
@@ -28,7 +27,9 @@ public class App {
     private static App singleton;
     private static ClientData clientData;
     private static ClientData clientData2;
+    private static Decryptor decryptor;
 
+    private static Encryptor encryptor;
     private static ArrayList<ContentMessage> clientMessages;
 
     public App() {
@@ -36,28 +37,36 @@ public class App {
         clientMessages = new ArrayList<>();
         communication.setLineWrap(true);
         input.setLineWrap(true);
+        encryptor = new Encryptor();
+        decryptor = new Decryptor();
         try {
-            clientData = new ClientData(true, CONSTANTS.sessionKeySize);
-            System.out.println("Key: " + clientData.getSessionKey().toString());
-            clientData2 = new ClientData(false, CONSTANTS.sessionKeySize);
-        } catch (NoSuchAlgorithmException e) {
+            clientData = new ClientData(true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
+            clientData2 = new ClientData(false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
             e.printStackTrace();
         }
 
         sendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //JOptionPane.showMessageDialog(null, "Hello World");
                 String messageContent = input.getText();
                 communication.append("Me: " + messageContent + "\n");
                 input.setText("");
 
                 String encryptionMode = CONSTANTS.AesAlgECBMode;
-                if (cbcMode.isSelected()) encryptionMode = CONSTANTS.AesAlgCBCMode;
+                IvParameterSpec ivParam = null;
+                if (cbcMode.isSelected()) {
+                    encryptionMode = CONSTANTS.AesAlgCBCMode;
+                    ivParam = clientData.getIvParameter();
+                }
 
                 try {
-                    encryptMessage(new ContentMessage(messageContent, ContentMessage.MessageType.TEXT, encryptionMode));
-                } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
+                    clientMessages.add(encryptor.encryptMessage(
+                            new ContentMessage(messageContent, ContentMessage.MessageType.TEXT,
+                                    new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam)),
+                            clientData.getSessionKey()));
+                }
+                catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
                         InvalidKeyException | BadPaddingException | IllegalBlockSizeException ex) {
                     ex.printStackTrace();
                 }
@@ -74,90 +83,46 @@ public class App {
         frame.setVisible(true);
 
         try(Socket server = new Socket(CONSTANTS.ipAddr, CONSTANTS.port)) {
-            Thread sender = new Thread(new ClientSender(server, clientData));
+            Thread sender = new Thread(new ClientSender(server, clientData, clientData2));
             Thread receiver = new Thread(new ClientReceiver(server));
             sender.start();
             receiver.start();
-            runProtocol();
+            while(true);
         } catch(IOException ex) {
             System.err.println(ex);
         }
-
-    }
-
-    public static void runProtocol() {
-        while(true) {}
     }
 
     public static ArrayList<ContentMessage> getMessages() {
         return clientMessages;
     }
 
+    public static Encryptor getEncryptor() {
+        return encryptor;
+    }
+
     public static void setMessage(ContentMessage mess) {
         try {
-            if (mess.getType() == ContentMessage.MessageType.TEXT) {
+            if (mess.getType().equals(MessageType.TEXT)) {
                 singleton.communication.append("You encrypted: " + mess.getContent() + "\n");
-                singleton.communication.append("You decrypted: " + decryptMessage(mess).getContent() + "\n");
+                singleton.communication.append("You decrypted: " + ((ContentMessage)decryptor.decryptMessage(
+                        mess, clientData2.getSessionKey())).getContent() + "\n");
+            } else if (mess.getType().equals(MessageType.SESSION_KEY)) {
+                clientData2.setSessionKey((SecretKey) ((KeyMessage)
+                        decryptor.decryptMessage(mess, clientData.getPrivateKey())).getKey());
+                byte[] iv2 = mess.getAlgorithm().getIv();
+                System.out.println("App - iv received: " + iv2);
+                clientData2.setIv(mess.getAlgorithm().getIv());
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
-                BadPaddingException | IllegalBlockSizeException e) {
+                BadPaddingException | IllegalBlockSizeException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
         }
     }
 
     public static void setKeyMessage(KeyMessage mess) {
-        if (mess.getType() == ContentMessage.MessageType.SESSION_KEY) {
-            clientData2.setSessionKey(mess.getKey());
-            clientData2.setIv(mess.getIv());
+        if (mess.getType() == MessageType.PUBLIC_KEY) {
+            clientData2.setPrivatePublicKey(null, (PublicKey) mess.getKey());
         }
-    }
-
-    private static void encryptMessage(ContentMessage message)
-            throws NoSuchPaddingException, NoSuchAlgorithmException,
-            InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException {
-        String algorithm = message.getEncryptionMode();
-
-        if (algorithm != null) {
-            Cipher cipher = Cipher.getInstance(algorithm);
-
-            if (algorithm == CONSTANTS.AesAlgECBMode) {
-                cipher.init(Cipher.ENCRYPT_MODE, clientData.getSessionKey());
-            } else if (algorithm == CONSTANTS.AesAlgCBCMode) {
-                cipher.init(Cipher.ENCRYPT_MODE, clientData.getSessionKey(), clientData.getIvParameter());
-            }
-            System.out.println("Encrypt algorithm: " + algorithm);
-
-            byte[] cipherText = cipher.doFinal(message.getContent().getBytes());
-            String encryptedMessageContent = Base64.getEncoder().encodeToString(cipherText);
-            message.setContent(encryptedMessageContent);
-            clientMessages.add(message);
-        }
-    }
-
-    private static ContentMessage decryptMessage(ContentMessage message)
-            throws NoSuchPaddingException, NoSuchAlgorithmException,
-            InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        if (message.getType() == ContentMessage.MessageType.TEXT) {
-            String algorithm = message.getEncryptionMode();
-            System.out.println("Decrypt algorithm: " + algorithm);
-            Cipher cipher = Cipher.getInstance(algorithm);
-
-            if (algorithm.equals(CONSTANTS.AesAlgECBMode)) {
-                cipher.init(Cipher.DECRYPT_MODE, clientData2.getSessionKey());
-            } else if (algorithm.equals(CONSTANTS.AesAlgCBCMode)) {
-                try {
-                    cipher.init(Cipher.DECRYPT_MODE, clientData2.getSessionKey(), clientData2.getIvParameter());
-                } catch (InvalidAlgorithmParameterException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(message.getContent()));
-            message.setContent(new String(plainText));
-            return message;
-        }
-
-        return null;
     }
 }

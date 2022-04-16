@@ -1,7 +1,5 @@
 package bsk.project.Messages;
 
-import bsk.project.CONSTANTS;
-
 import java.io.Serializable;
 
 public class Message implements Serializable {
@@ -10,19 +8,18 @@ public class Message implements Serializable {
     }
 
     protected MessageType type;
-    protected String encryptionMode;
+    protected Algorithm algorithm;
 
     public Message() {}
 
-    public Message(MessageType type, String encryptionMode) {
+    public Message(MessageType type, Algorithm algorithm) {
         this.type = type;
-        this.encryptionMode = encryptionMode;
+        this.algorithm = algorithm;
     }
 
     public MessageType getType() { return this.type; }
-
-    public String getEncryptionMode() { return this.encryptionMode; }
+    public Algorithm getAlgorithm() { return this.algorithm; }
 
     public void setType(MessageType type) { this.type = type; }
-    public void setEncryptionMode(String encryptionMode) { this.encryptionMode = encryptionMode; }
-}
+    public void setAlgorithm(Algorithm algorithm) { this.algorithm = algorithm; }
+    }
