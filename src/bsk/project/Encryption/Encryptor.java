@@ -2,17 +2,18 @@ package bsk.project.Encryption;
 
 import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
+import bsk.project.Messages.Message.*;
 
 import javax.crypto.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.Base64;
 
 public class Encryptor {
 
     public static ContentMessage encryptMessage(Message message, Key key)
-            throws NoSuchPaddingException, NoSuchAlgorithmException,
-            InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException {
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
 
         String algorithm = message.getAlgorithm().getEncryptionType();
         System.out.println("Encrypt algorithm: " + algorithm);
@@ -21,7 +22,7 @@ public class Encryptor {
             result = (ContentMessage) message;
 
         if (algorithm != null) {
-            if (message.getType().equals(Message.MessageType.TEXT)) {
+            if (message.getType().equals(MessageType.TEXT)) {
 
                 Cipher cipher = Cipher.getInstance(algorithm);
 
@@ -36,20 +37,26 @@ public class Encryptor {
                 result.setContent(encryptedMessageContent);
                 System.out.println("Encryptor - encrypted message: " + encryptedMessageContent);
 
-            } else if (message.getType().equals(Message.MessageType.SESSION_KEY)) {
+            } else if (message.getType().equals(MessageType.SESSION_KEY) ||
+                    message.getType().equals(MessageType.PUBLIC_KEY) ||
+                    message.getType().equals(MessageType.PRIVATE_KEY)) {
                 KeyMessage keyMessage = null;
                 if (message instanceof KeyMessage)
                     keyMessage = (KeyMessage) message;
 
                 Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
-                encryptCipher.init(Cipher.ENCRYPT_MODE, key);
+                if (message.getType().equals(MessageType.SESSION_KEY)) {
+                    encryptCipher.init(Cipher.ENCRYPT_MODE, key);
+                } else {
+                    encryptCipher.init(Cipher.ENCRYPT_MODE, key, message.getAlgorithm().getIvParameter());
+                }
 
-                byte[] sessionKeyBytes = keyMessage.getKey().getEncoded();
-                byte[] encryptedSessionKeyBytes = encryptCipher.doFinal(sessionKeyBytes);
-                String encryptedSessionKeyString = Base64.getEncoder().encodeToString(encryptedSessionKeyBytes);
+                byte[] keyBytes = keyMessage.getKey().toString().getBytes(StandardCharsets.UTF_8);
+                byte[] encryptedKeyBytes = encryptCipher.doFinal(keyBytes);
+                String encryptedKeyString = Base64.getEncoder().encodeToString(encryptedKeyBytes);
 
-                result = new ContentMessage(encryptedSessionKeyString, message.getType(), message.getAlgorithm());
-                System.out.println("Encryptor - encrypted session key: " + encryptedSessionKeyString);
+                result = new ContentMessage(encryptedKeyString, message.getType(), message.getAlgorithm());
+                System.out.println("Encryptor - encrypted key: " + encryptedKeyString);
             }
         }
 

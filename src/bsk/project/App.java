@@ -45,7 +45,9 @@ public class App {
                     userName, true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize, CONSTANTS.localKeySize);
             clientData2 = new ClientData(
                     null, false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize, CONSTANTS.localKeySize);
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException | NoSuchPaddingException |
+                InvalidAlgorithmParameterException | InvalidKeyException | BadPaddingException |
+                IllegalBlockSizeException | NoSuchProviderException e) {
             e.printStackTrace();
         }
 

@@ -34,17 +34,27 @@ public class Decryptor {
             System.out.println("Decryptor - decrypted message: " + new String(plainText));
             contentMessage.setContent(new String(plainText));
 
-        } else if (message.getType().equals(MessageType.SESSION_KEY)) {
+        } else if (message.getType().equals(MessageType.SESSION_KEY) ||
+                message.getType().equals(MessageType.PRIVATE_KEY) ||
+                message.getType().equals(MessageType.PUBLIC_KEY)) {
 
-            byte[] encryptedPublicKeyBytes = Base64.getDecoder().decode(contentMessage.getContent());
             Cipher decryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
-            decryptCipher.init(Cipher.DECRYPT_MODE, key);
-            byte[] decryptedSessionKeyBytes = decryptCipher.doFinal(encryptedPublicKeyBytes);
-            SecretKey sessionKey = new SecretKeySpec(
-                    decryptedSessionKeyBytes, 0, decryptedSessionKeyBytes.length, CONSTANTS.AesAlgName);
-            System.out.println("Decryptor - decrypted session key: " + sessionKey);
+            System.out.println("Decrypt algorithm: " + algorithm.getEncryptionType());
+            if (message.getType().equals(MessageType.SESSION_KEY)) {
+                decryptCipher.init(Cipher.DECRYPT_MODE, key);
+            } else {
+                decryptCipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
+            }
 
-            return new KeyMessage(sessionKey, message.getType(), algorithm);
+            byte[] encryptedKeyBytes = Base64.getDecoder().decode(contentMessage.getContent());
+            byte[] decryptedKeyBytes = decryptCipher.doFinal(encryptedKeyBytes);
+            SecretKey secretKey =
+                    new SecretKeySpec(decryptedKeyBytes, 0, decryptedKeyBytes.length, CONSTANTS.AesAlgName);
+
+            System.out.println("Decryptor - decrypted key: " + secretKey);
+
+            return new KeyMessage(secretKey, message.getType(), algorithm);
+
         }
 
         return contentMessage;
