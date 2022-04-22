@@ -51,28 +51,29 @@ public class Decryptor {
         return contentMessage;
     }
 
-    public static Key decryptKey(String keyToDecrypt, Algorithm algorithm, MessageType messageType, Key key)
+    public static Key decryptKey(ContentMessage message, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
             BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException {
 
-        System.out.println("Decryptor - Decrypt algorithm: " + algorithm.getEncryptionType());
+        Algorithm algorithm = message.getAlgorithm();
+        String type = algorithm.getEncryptionType();
+        System.out.println("Decryptor - Decrypt algorithm: " + type);
         Key result = null;
 
         if (algorithm != null) {
 
             Cipher decryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
             decryptCipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
-            byte[] decryptedKeyBytes = decryptCipher.doFinal(Base64.getDecoder().decode(keyToDecrypt));
+            byte[] decryptedKeyBytes = decryptCipher.doFinal(Base64.getDecoder().decode(message.getContent()));
 
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            if (messageType.equals(MessageType.PRIVATE_KEY)) {
+            if (type.equals(MessageType.PRIVATE_KEY)) {
                 result = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKeyBytes));
-            } else if (messageType.equals(MessageType.PUBLIC_KEY)) {
+            } else if (type.equals(MessageType.PUBLIC_KEY)) {
                 result = keyFactory.generatePublic(new X509EncodedKeySpec(decryptedKeyBytes));
             }
 
             System.out.println("Decryptor - decrypted key: " + result);
-
         }
 
         return result;

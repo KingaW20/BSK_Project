@@ -4,6 +4,7 @@ import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
 
 import javax.crypto.*;
+import java.io.IOException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
@@ -13,22 +14,22 @@ public class Encryptor {
     public static ContentMessage encryptMessage(Message message, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException {
+            BadPaddingException, IllegalBlockSizeException, IOException {
 
-        String algorithm = message.getAlgorithm().getEncryptionType();
-        System.out.println("Encrypt algorithm: " + algorithm);
+        String algorithmType = message.getAlgorithm().getEncryptionType();
+        System.out.println("Encrypt algorithm: " + algorithmType);
         ContentMessage result = null;
         if (message instanceof ContentMessage)
             result = (ContentMessage) message;
 
-        if (algorithm != null) {
+        if (algorithmType != null) {
             if (message.getType().equals(Message.MessageType.TEXT)) {
 
-                Cipher cipher = Cipher.getInstance(algorithm);
+                Cipher cipher = Cipher.getInstance(algorithmType);
 
-                if (algorithm.equals(CONSTANTS.AesAlgECBMode)) {
+                if (algorithmType.equals(CONSTANTS.AesAlgECBMode)) {
                     cipher.init(Cipher.ENCRYPT_MODE, key);
-                } else if (algorithm.equals(CONSTANTS.AesAlgCBCMode)) {
+                } else if (algorithmType.equals(CONSTANTS.AesAlgCBCMode)) {
                     cipher.init(Cipher.ENCRYPT_MODE, key, result.getAlgorithm().getIvParameter());
                 }
 
@@ -57,17 +58,18 @@ public class Encryptor {
         return result;
     }
 
-    public static byte[] encryptKey(Key keyToEncrypt, Algorithm algorithm, Message.MessageType messageType, Key key)
+    public static byte[] encryptKey(KeyMessage keyMessage, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
             BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException {
 
+        Algorithm algorithm = keyMessage.getAlgorithm();
         System.out.println("Encryptor - Encrypt algorithm: " + algorithm.getEncryptionType());
         byte[] result = null;
 
         if (algorithm != null) {
             Cipher encryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
             encryptCipher.init(Cipher.ENCRYPT_MODE, key, algorithm.getIvParameter());
-            result = encryptCipher.doFinal(keyToEncrypt.getEncoded());
+            result = encryptCipher.doFinal(keyMessage.getKey().getEncoded());
             System.out.println("Encryptor - Encrypted key: " + result);
         }
 
