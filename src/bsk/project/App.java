@@ -70,7 +70,7 @@ public class App {
                             clientData.getSessionKey()));
                 }
                 catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
-                        InvalidKeyException | BadPaddingException | IllegalBlockSizeException ex) {
+                        InvalidKeyException | BadPaddingException | IllegalBlockSizeException | IOException ex) {
                     ex.printStackTrace();
                 }
             }

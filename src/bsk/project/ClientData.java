@@ -150,9 +150,10 @@ public class ClientData {
             byte[] publicKeyBytes = Files.readAllBytes(publicKeyFile.toPath());
 
             publicKey = (PublicKey) Decryptor.decryptKey(
-                    Base64.getEncoder().encodeToString(publicKeyBytes),
-                    new Algorithm(CONSTANTS.AesAlgCBCMode, 128, new IvParameterSpec(ivLocal)),
-                    Message.MessageType.PUBLIC_KEY,
+                    new ContentMessage(
+                            Base64.getEncoder().encodeToString(publicKeyBytes),
+                            Message.MessageType.PUBLIC_KEY,
+                            new Algorithm(CONSTANTS.AesAlgCBCMode, 128, new IvParameterSpec(ivLocal))),
                     localKey
             );
 
@@ -164,9 +165,10 @@ public class ClientData {
             byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath());
 
             privateKey = (PrivateKey) Decryptor.decryptKey(
-                    Base64.getEncoder().encodeToString(privateKeyBytes),
-                    new Algorithm(CONSTANTS.AesAlgCBCMode, 128, new IvParameterSpec(ivLocal)),
-                    Message.MessageType.PRIVATE_KEY,
+                    new ContentMessage(
+                            Base64.getEncoder().encodeToString(privateKeyBytes),
+                            Message.MessageType.PRIVATE_KEY,
+                            new Algorithm(CONSTANTS.AesAlgCBCMode, 128, new IvParameterSpec(ivLocal))),
                     localKey
             );
 
@@ -189,15 +191,15 @@ public class ClientData {
         KeyPair keyPair = generator.generateKeyPair();
 
         byte[] encryptedPublicKey = Encryptor.encryptKey(
-                keyPair.getPublic(),
-                new Algorithm(CONSTANTS.AesAlgCBCMode, 128, getIvParameter()),
-                Message.MessageType.PUBLIC_KEY,
+                new KeyMessage(keyPair.getPublic(),
+                        Message.MessageType.PUBLIC_KEY,
+                        new Algorithm(CONSTANTS.AesAlgCBCMode, 128, getIvParameter())),
                 localKey);
 
         byte[] encryptedPrivateKey = Encryptor.encryptKey(
-                keyPair.getPrivate(),
-                new Algorithm(CONSTANTS.AesAlgCBCMode, 128, getIvParameter()),
-                Message.MessageType.PRIVATE_KEY,
+                new KeyMessage(keyPair.getPrivate(),
+                        Message.MessageType.PRIVATE_KEY,
+                        new Algorithm(CONSTANTS.AesAlgCBCMode, 128, getIvParameter())),
                 localKey);
 
         saveToFile(publicKeyPath, encryptedPublicKey);

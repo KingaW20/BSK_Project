@@ -22,4 +22,4 @@ public class Message implements Serializable {
 
     public void setType(MessageType type) { this.type = type; }
     public void setAlgorithm(Algorithm algorithm) { this.algorithm = algorithm; }
-    }
+}
