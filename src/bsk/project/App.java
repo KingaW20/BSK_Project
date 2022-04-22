@@ -119,8 +119,11 @@ public class App {
     public static void setMessage(ContentMessage mess) {
         try {
             if (mess.getType().equals(MessageType.TEXT)) {
-                singleton.communication.append(clientData2.getUserName() + " encrypted: " + mess.getContent() + "\n");
-                singleton.communication.append(clientData2.getUserName() + " decrypted: " +
+//                singleton.communication.append(clientData2.getUserName() + " encrypted: " + mess.getContent() + "\n");
+//                singleton.communication.append(clientData2.getUserName() + " decrypted: " +
+//                        ((ContentMessage)decryptor.decryptMessage(
+//                                mess, clientData2.getSessionKey())).getContent() + "\n");
+                singleton.communication.append(clientData2.getUserName() + ": " +
                         ((ContentMessage)decryptor.decryptMessage(
                                 mess, clientData2.getSessionKey())).getContent() + "\n");
             } else if (mess.getType().equals(MessageType.SESSION_KEY)) {

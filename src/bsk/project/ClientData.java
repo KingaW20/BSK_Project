@@ -81,7 +81,7 @@ public class ClientData {
     }
 
     private SecretKey generateLocalKey()
-            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
         SecretKey localKey = null;
 
         // read iv
@@ -102,13 +102,13 @@ public class ClientData {
         }
 
         // if local key doesn't exist
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        SecureRandom sr = SecureRandom.getInstance(CONSTANTS.saltAlg);
         byte[] salt = new byte[16];
         sr.nextBytes(salt);
 
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        KeySpec spec = new PBEKeySpec(userName.toCharArray(), salt, 65536, 256);
-        localKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(CONSTANTS.ShaAlg);
+        KeySpec spec = new PBEKeySpec(userName.toCharArray(), salt, 65536, CONSTANTS.shaKeyLength);
+        localKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), CONSTANTS.AesAlgName);
 
         saveToFile(localKeyPath, localKey.getEncoded());
         System.out.println("Local key: " + localKey);

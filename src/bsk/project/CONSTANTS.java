@@ -16,4 +16,9 @@ public class CONSTANTS {
     public static String RsaAlgName = "RSA";                        //RSA
     public static int keyPairSize = 2048;
     public static String keyPath = "keys/";
+
+    //local key
+    public static int shaKeyLength = 256;
+    public static String saltAlg = "SHA1PRNG";
+    public static String ShaAlg = "PBKDF2WithHmacSHA256";
 }

@@ -66,7 +66,7 @@ public class Decryptor {
             decryptCipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
             byte[] decryptedKeyBytes = decryptCipher.doFinal(Base64.getDecoder().decode(message.getContent()));
 
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            KeyFactory keyFactory = KeyFactory.getInstance(CONSTANTS.RsaAlgName);
             if (type.equals(MessageType.PRIVATE_KEY)) {
                 result = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKeyBytes));
             } else if (type.equals(MessageType.PUBLIC_KEY)) {
