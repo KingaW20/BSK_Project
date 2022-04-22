@@ -5,6 +5,7 @@ import bsk.project.Messages.*;
 
 import javax.crypto.*;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 
 public class Encryptor {
@@ -51,6 +52,23 @@ public class Encryptor {
                 result = new ContentMessage(encryptedSessionKeyString, message.getType(), message.getAlgorithm());
                 System.out.println("Encryptor - encrypted session key: " + encryptedSessionKeyString);
             }
+        }
+
+        return result;
+    }
+
+    public static byte[] encryptKey(Key keyToEncrypt, Algorithm algorithm, Message.MessageType messageType, Key key)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException {
+
+        System.out.println("Encryptor - Encrypt algorithm: " + algorithm.getEncryptionType());
+        byte[] result = null;
+
+        if (algorithm != null) {
+            Cipher encryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
+            encryptCipher.init(Cipher.ENCRYPT_MODE, key, algorithm.getIvParameter());
+            result = encryptCipher.doFinal(keyToEncrypt.getEncoded());
+            System.out.println("Encryptor - Encrypted key: " + result);
         }
 
         return result;
