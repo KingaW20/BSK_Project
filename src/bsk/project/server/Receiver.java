@@ -2,8 +2,7 @@ package bsk.project.server;
 
 import bsk.project.Messages.*;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.net.*;
 
 public class Receiver implements Runnable {

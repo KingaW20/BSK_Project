@@ -1,38 +1,52 @@
 package bsk.project;
 
+import bsk.project.Encryption.*;
+import bsk.project.Messages.*;
+
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.*;
 import java.io.*;
 import java.nio.file.*;
 import java.security.*;
-import java.security.interfaces.*;
 import java.security.spec.*;
+import java.util.Base64;
 
 public class ClientData {
+    private SecretKey localKey;
     private String userName;
     private KeyPair keyPair;
     private int keyPairSize;
     private String path;
+    private String localIvPath;
+    private String localKeyPath;
     private String privateKeyPath;
     private String publicKeyPath;
 
     private SecretKey sessionKey;
     private int sessionKeySize;
     private byte[] iv;
+    private byte[] ivLocal;
 
     public ClientData(String userName, boolean generation, int sessionKeySize, int keyPairSize)
-            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, NoSuchProviderException,
+            IllegalBlockSizeException, NoSuchPaddingException, BadPaddingException,
+            InvalidAlgorithmParameterException, InvalidKeyException {
         this.sessionKeySize = sessionKeySize;
         this.userName = userName;
-        path = CONSTANTS.keyPath + userName;
-        privateKeyPath = path + "/private.key";
-        publicKeyPath = path + "/public.key";
+        this.path = CONSTANTS.keyPath + userName;
+        this.localIvPath = path + "\\Local\\iv.par";
+        this.localKeyPath = path + "\\Local\\local.key";
+        this.privateKeyPath = path + "\\Private\\private.key";
+        this.publicKeyPath = path + "\\Public\\public.key";
+        this.ivLocal = null;
 
         if (generation) {
-            sessionKey = generateKey(sessionKeySize, CONSTANTS.AesAlgName);
             iv = generateIv();
+            localKey = generateLocalKey();
+            sessionKey = generateSessionKey(sessionKeySize, CONSTANTS.AesAlgName);
             keyPair = generateKeyPair(keyPairSize, CONSTANTS.RsaAlgName);
         } else {
+            localKey = null;
             sessionKey = null;
             iv = null;
             keyPair = null;
@@ -66,7 +80,43 @@ public class ClientData {
         return iv;
     }
 
-    private SecretKey generateKey(int size, String algorithmName) throws NoSuchAlgorithmException {
+    private SecretKey generateLocalKey()
+            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+        SecretKey localKey = null;
+
+        // read iv
+        File localIvFile = new File(localIvPath);
+        if (Files.exists(Paths.get(String.valueOf(localIvFile)))) {
+            ivLocal = Files.readAllBytes(localIvFile.toPath());
+            System.out.println("ClientData - iv readed: " + ivLocal);
+        }
+
+        // read local key
+        File localKeyFile = new File(localKeyPath);
+        if (Files.exists(Paths.get(String.valueOf(localKeyFile)))) {
+            byte[] localKeyBytes = Files.readAllBytes(localKeyFile.toPath());
+            localKey = new SecretKeySpec(localKeyBytes, 0, localKeyBytes.length, "AES");
+
+            System.out.println("ClientData - local key readed: " + localKey);
+            return localKey;
+        }
+
+        // if local key doesn't exist
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        byte[] salt = new byte[16];
+        sr.nextBytes(salt);
+
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+        KeySpec spec = new PBEKeySpec(userName.toCharArray(), salt, 65536, 256);
+        localKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+
+        saveToFile(localKeyPath, localKey.getEncoded());
+        System.out.println("Local key: " + localKey);
+
+        return localKey;
+    }
+
+    private SecretKey generateSessionKey(int size, String algorithmName) throws NoSuchAlgorithmException {
         KeyGenerator keyGenerator = KeyGenerator.getInstance(algorithmName);
         keyGenerator.init(size);
         //return keyGenerator.generateKey();
@@ -77,7 +127,8 @@ public class ClientData {
     }
 
     private KeyPair generateKeyPair(int size, String algorithm)
-            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, InvalidKeyException,
+            BadPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, NoSuchPaddingException {
         // if keys exist, read them
         KeyPair kp = readKeys(algorithm);
         if (kp != null) {
@@ -90,25 +141,35 @@ public class ClientData {
         return generateNewKeyPair(size);
     }
 
-    private KeyPair readKeys(String algorithm) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
+    private KeyPair readKeys(String algorithm) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
         PublicKey publicKey = null;
         PrivateKey privateKey = null;
-
-        KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
 
         File publicKeyFile = new File(publicKeyPath);
         if (Files.exists(Paths.get(publicKeyPath))) {
             byte[] publicKeyBytes = Files.readAllBytes(publicKeyFile.toPath());
-            EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
-            publicKey = keyFactory.generatePublic(publicKeySpec);
+
+            publicKey = (PublicKey) Decryptor.decryptKey(
+                    Base64.getEncoder().encodeToString(publicKeyBytes),
+                    new Algorithm(CONSTANTS.AesAlgCBCMode, 128, new IvParameterSpec(ivLocal)),
+                    Message.MessageType.PUBLIC_KEY,
+                    localKey
+            );
+
             System.out.println("ClientData - public key readed: " + publicKey);
         }
 
         File privateKeyFile = new File(privateKeyPath);
         if (Files.exists(Paths.get(privateKeyPath))) {
             byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath());
-            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-            privateKey = keyFactory.generatePrivate(privateKeySpec);
+
+            privateKey = (PrivateKey) Decryptor.decryptKey(
+                    Base64.getEncoder().encodeToString(privateKeyBytes),
+                    new Algorithm(CONSTANTS.AesAlgCBCMode, 128, new IvParameterSpec(ivLocal)),
+                    Message.MessageType.PRIVATE_KEY,
+                    localKey
+            );
+
             System.out.println("ClientData - private key readed: " + privateKey);
         }
 
@@ -121,27 +182,45 @@ public class ClientData {
     }
 
     private KeyPair generateNewKeyPair(int keySize)
-            throws NoSuchAlgorithmException, IOException {
+            throws NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException, InvalidKeySpecException {
         KeyPairGenerator generator = KeyPairGenerator.getInstance(CONSTANTS.RsaAlgName);
         generator.initialize(keySize);
         KeyPair keyPair = generator.generateKeyPair();
-        if (!Files.exists(Paths.get(CONSTANTS.keyPath))) {
-            Files.createDirectory(Paths.get(CONSTANTS.keyPath));
-        }
-        if (!Files.exists(Paths.get(path))) {
-            Files.createDirectory(Paths.get(path));
+
+        byte[] encryptedPublicKey = Encryptor.encryptKey(
+                keyPair.getPublic(),
+                new Algorithm(CONSTANTS.AesAlgCBCMode, 128, getIvParameter()),
+                Message.MessageType.PUBLIC_KEY,
+                localKey);
+
+        byte[] encryptedPrivateKey = Encryptor.encryptKey(
+                keyPair.getPrivate(),
+                new Algorithm(CONSTANTS.AesAlgCBCMode, 128, getIvParameter()),
+                Message.MessageType.PRIVATE_KEY,
+                localKey);
+
+        saveToFile(publicKeyPath, encryptedPublicKey);
+        saveToFile(privateKeyPath, encryptedPrivateKey);
+        saveToFile(localIvPath, getIv());
+        System.out.println("Public key saved: " + encryptedPublicKey);
+        System.out.println("Private key saved: " + encryptedPrivateKey);
+        System.out.println("Local iv saved: " + getIv());
+
+        return keyPair;
+    }
+
+    private void saveToFile(String filePath, byte[] key) {
+        File targetFile = new File(filePath);
+        File parent = targetFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IllegalStateException("Couldn't create dir: " + parent);
         }
 
-        try (FileOutputStream fosPub = new FileOutputStream(publicKeyPath);
-             FileOutputStream fosPriv = new FileOutputStream(privateKeyPath)) {
-            fosPub.write(keyPair.getPublic().getEncoded());
-            System.out.println("ClientData - public key generated: " + keyPair.getPublic());
-            fosPriv.write(keyPair.getPrivate().getEncoded());
-            System.out.println("ClientData - private key generated: " + keyPair.getPrivate());
+        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+            fos.write(key);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return keyPair;
     }
 }
