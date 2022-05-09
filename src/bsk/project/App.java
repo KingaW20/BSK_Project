@@ -80,6 +80,7 @@ public class App {
     public static void main(String[] args) {
         JFrame logInPanelFrame = new JFrame("App");
         logInPanelFrame.setSize(300, 200);
+        logInPanelFrame.setResizable(false);
         LogInPanel logInPanel = new LogInPanel(logInPanelFrame);
         logInPanelFrame.setContentPane(logInPanel.logInPanel);
 
