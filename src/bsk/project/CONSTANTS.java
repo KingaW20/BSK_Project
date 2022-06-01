@@ -21,7 +21,4 @@ public class CONSTANTS {
     public static int shaKeyLength = 256;
     public static String saltAlg = "SHA1PRNG";
     public static String ShaAlg = "PBKDF2WithHmacSHA256";
-
-    //encryption - files
-    public static String beforeEncryptedFileName = "encrypted_";
 }

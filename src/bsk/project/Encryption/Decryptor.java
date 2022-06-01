@@ -68,7 +68,6 @@ public class Decryptor {
             File outputFile = new File(fileMessage.getFileName());
             FileOutputStream outputStream = new FileOutputStream(outputFile);
             outputStream.write(outputBytes);
-            fileMessage.deleteFileFromDisk();
 
             inputStream.close();
             outputStream.close();

@@ -94,7 +94,7 @@ public class ClientSender implements Runnable {
                     System.out.println("ClientSender - encrypted file sended: " + ((FileMessage)mess).getFile());
                     oos.reset();
                     oos.flush();
-                    ((FileMessage) mess).deleteFileFromDisk();
+                    ((FileMessage)mess).deleteFileFromDisk();
                 }
             }
         }

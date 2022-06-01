@@ -12,6 +12,8 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
@@ -63,6 +65,8 @@ public class App {
         addFileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                fileChooser.setDialogTitle("Choose a file to send");
+                fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
                 int returnVal = fileChooser.showOpenDialog(fileChooser.getParent());
 
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -128,7 +132,6 @@ public class App {
         JFrame frame = new JFrame("App " + userName);
 
         final JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         frame.add(fileChooser);
         frame.setSize(new Dimension(900, 650));
         frame.setLocation(0, 0);
@@ -181,8 +184,19 @@ public class App {
                 singleton.communication.append(clientData2.getUserName() + " send file " +
                         ((FileMessage) mess).getFileName() + "\n");
 
-                //TODO: wyświetlić w UI, żeby pobrać
-                //((FileMessage)decryptor.decryptMessage(mess, clientData2.getSessionKey())).getFile();
+                // saving received file
+                singleton.fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                singleton.fileChooser.setDialogTitle("Specify a directory to save received file");
+                int userSelection = singleton.fileChooser.showDialog(
+                        singleton.fileChooser.getParent(), "Save");
+
+                if (userSelection == JFileChooser.APPROVE_OPTION) {
+                    File fileToSave = singleton.fileChooser.getSelectedFile();
+                    System.out.println("Save as file: " + fileToSave.getAbsolutePath() + "\\" +
+                            ((FileMessage) mess).getFileName());
+                    Files.write(Path.of(fileToSave.getAbsolutePath() + "/" + ((FileMessage) mess).getFileName()),
+                            files.get(((FileMessage) mess).getFileName()));
+                }
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | BadPaddingException |
                 IllegalBlockSizeException | InvalidAlgorithmParameterException | IOException e) {
