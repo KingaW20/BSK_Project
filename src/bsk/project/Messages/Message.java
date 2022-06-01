@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Message implements Serializable {
     public enum MessageType {
-        PUBLIC_KEY, PRIVATE_KEY, SESSION_KEY, FILE, TEXT;
+        PUBLIC_KEY, PRIVATE_KEY, SESSION_KEY, FILE, TEXT, FILENAME;
     }
 
     protected MessageType type;

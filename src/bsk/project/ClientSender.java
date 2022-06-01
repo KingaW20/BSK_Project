@@ -11,7 +11,7 @@ import java.security.*;
 import java.util.*;
 
 public class ClientSender implements Runnable {
-    private static ArrayList<ContentMessage> clientMessages;
+    private static ArrayList<Message> clientMessages;
     private Socket server;
     private ClientData clientData;
     private ClientData clientData2;
@@ -62,7 +62,7 @@ public class ClientSender implements Runnable {
         while (!sended) {
             encryptor = App.getEncryptor();
             if (clientData2.getKeyPair() != null) {
-                ContentMessage contentMessage = encryptor.encryptMessage(
+                ContentMessage contentMessage = (ContentMessage) encryptor.encryptMessage(
                         new KeyMessage(clientData.getSessionKey(), MessageType.SESSION_KEY,
                                 new Algorithm(CONSTANTS.RsaAlgName, clientData.getSessionKeySize(), null)),
                         clientData2.getPublicKey());
@@ -78,14 +78,24 @@ public class ClientSender implements Runnable {
     }
 
     private void sendMessages(ObjectOutputStream oos) throws IOException {
+
         while (true) {
             clientMessages = App.getMessages();
             if (clientMessages.size() > 0) {
-                ContentMessage mess = clientMessages.remove(0);
-                oos.writeObject(mess);
-                System.out.println("ClientSender - encrypted message sended: " + mess.getContent());
-                oos.reset();
-                oos.flush();
+                Message mess = clientMessages.remove(0);
+
+                if (mess instanceof ContentMessage) {
+                    oos.writeObject(mess);
+                    System.out.println("ClientSender - encrypted message sended: " + ((ContentMessage)mess).getContent());
+                    oos.reset();
+                    oos.flush();
+                } else if (mess instanceof FileMessage) {
+                    oos.writeObject(mess);
+                    System.out.println("ClientSender - encrypted file sended: " + ((FileMessage)mess).getFile());
+                    oos.reset();
+                    oos.flush();
+                    ((FileMessage) mess).deleteFileFromDisk();
+                }
             }
         }
     }

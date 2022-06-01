@@ -4,7 +4,7 @@ import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
 
 import javax.crypto.*;
-import java.io.IOException;
+import java.io.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
@@ -52,6 +52,46 @@ public class Encryptor {
 
                 result = new ContentMessage(encryptedSessionKeyString, message.getType(), message.getAlgorithm());
                 System.out.println("Encryptor - encrypted session key: " + encryptedSessionKeyString);
+            }
+        }
+
+        return result;
+    }
+
+    public static FileMessage encryptFile(Message message, Key key)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException, IOException {
+
+        String algorithmType = message.getAlgorithm().getEncryptionType();
+        System.out.println("Encrypt algorithm: " + algorithmType);
+        FileMessage result = null;
+        if (message instanceof FileMessage)
+            result = (FileMessage) message;
+
+        if (algorithmType != null) {
+            if (message.getType().equals(Message.MessageType.FILE)) {
+                FileMessage fileMessage = null;
+                if (message instanceof FileMessage)
+                    fileMessage = (FileMessage) message;
+
+                Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
+                encryptCipher.init(Cipher.ENCRYPT_MODE, key);
+
+                FileInputStream inputStream = new FileInputStream(fileMessage.getFile());
+                byte[] inputBytes = new byte[(int) fileMessage.getFile().length()];
+                inputStream.read(inputBytes);
+
+                byte[] outputBytes = encryptCipher.doFinal(inputBytes);
+
+                File outputFile = new File(CONSTANTS.beforeEncryptedFileName + fileMessage.getFileName());
+                FileOutputStream outputStream = new FileOutputStream(outputFile);
+                outputStream.write(outputBytes);
+
+                inputStream.close();
+                outputStream.close();
+
+                result = new FileMessage(outputFile, outputFile.getName(), message.getType(), message.getAlgorithm());
+                System.out.println("Encryptor - encrypted file: " + outputFile);
             }
         }
 

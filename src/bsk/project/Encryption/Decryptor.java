@@ -6,6 +6,8 @@ import bsk.project.Messages.Message.*;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.nio.file.Files;
 import java.security.*;
 import java.security.spec.*;
 import java.util.Base64;
@@ -14,13 +16,14 @@ public class Decryptor {
 
     public static Message decryptMessage(Message message, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-            InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException {
         ContentMessage contentMessage = null;
         if (message instanceof ContentMessage)
             contentMessage = (ContentMessage) message;
         Algorithm algorithm = message.getAlgorithm();
 
         if (message.getType().equals(MessageType.TEXT)) {
+
             String algorithmType = algorithm.getEncryptionType();
             System.out.println("Decrypt algorithm: " + algorithmType);
             Cipher cipher = Cipher.getInstance(algorithmType);
@@ -46,6 +49,35 @@ public class Decryptor {
             System.out.println("Decryptor - decrypted session key: " + sessionKey);
 
             return new KeyMessage(sessionKey, message.getType(), algorithm);
+
+        } else if (message.getType().equals(MessageType.FILE)) {
+
+            FileMessage fileMessage = null;
+            if (message instanceof FileMessage)
+                fileMessage = (FileMessage) message;
+
+            Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
+            encryptCipher.init(Cipher.DECRYPT_MODE, key);
+
+            Files.write(fileMessage.getFile().toPath(), fileMessage.getFileBytes());
+            FileInputStream inputStream = new FileInputStream(fileMessage.getFile());
+            byte[] inputBytes = new byte[(int) fileMessage.getFile().length()];
+            inputStream.read(inputBytes);
+            byte[] outputBytes = encryptCipher.doFinal(inputBytes);
+
+            File outputFile = new File(fileMessage.getFileName());
+            FileOutputStream outputStream = new FileOutputStream(outputFile);
+            outputStream.write(outputBytes);
+            fileMessage.deleteFileFromDisk();
+
+            inputStream.close();
+            outputStream.close();
+
+            System.out.println("Decryptor - decrypted file: " + outputFile);
+            FileMessage result = new FileMessage(
+                    outputFile, fileMessage.getFileName(), message.getType(), message.getAlgorithm());
+            result.deleteFileFromDisk();
+            return result;
         }
 
         return contentMessage;
