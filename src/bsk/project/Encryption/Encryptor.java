@@ -83,7 +83,7 @@ public class Encryptor {
 
                 byte[] outputBytes = encryptCipher.doFinal(inputBytes);
 
-                File outputFile = new File(CONSTANTS.beforeEncryptedFileName + fileMessage.getFileName());
+                File outputFile = new File(fileMessage.getFileName());
                 FileOutputStream outputStream = new FileOutputStream(outputFile);
                 outputStream.write(outputBytes);
 
