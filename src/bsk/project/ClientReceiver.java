@@ -67,10 +67,15 @@ public class ClientReceiver implements Runnable {
 
     private void getMessages(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         while(true) {
-            ContentMessage mess = (ContentMessage) ois.readObject();
+            Message mess = (Message) ois.readObject();
             if (mess != null) {
-                System.out.println("CilentReceiver - encrypted message received: " + mess.getContent());
-                App.setMessage(mess);
+                if (mess instanceof ContentMessage) {
+                    System.out.println("CilentReceiver - encrypted message received: " + ((ContentMessage) mess).getContent());
+                    App.setMessage(mess);
+                } else if (mess instanceof FileMessage) {
+                    System.out.println("CilentReceiver - encrypted file received: " + ((FileMessage) mess).getFile());
+                    App.setMessage(mess);
+                }
             }
         }
     }

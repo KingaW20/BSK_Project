@@ -42,6 +42,8 @@ public class Sender implements Runnable {
                         System.out.println("Message send: " + ((ContentMessage) mess).getContent());
                     } else if (mess instanceof KeyMessage) {
                         System.out.println("Key send: " + ((KeyMessage) mess).getKey());
+                    } else if (mess instanceof FileMessage) {
+                        System.out.println("File send: " + ((FileMessage) mess).getFile());
                     }
 
                     oos.reset();

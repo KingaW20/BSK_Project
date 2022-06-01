@@ -1,5 +1,6 @@
 package bsk.project.server;
 
+import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
 
 import java.io.*;
@@ -36,6 +37,8 @@ public class Receiver implements Runnable {
                         System.out.println("Received mess: " + ((ContentMessage) mess).getContent());
                     } else if (mess instanceof KeyMessage) {
                         System.out.println("Received key: " + ((KeyMessage) mess).getKey());
+                    } else if (mess instanceof FileMessage) {
+                        System.out.println("Received file: " + ((FileMessage) mess).getFile());
                     }
 
                     Server.setMessFrom(firstClient, mess);
