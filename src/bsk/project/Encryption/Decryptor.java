@@ -1,5 +1,6 @@
 package bsk.project.Encryption;
 
+import bsk.project.App;
 import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
 import bsk.project.Messages.Message.*;
@@ -22,6 +23,17 @@ public class Decryptor {
             contentMessage = (ContentMessage) message;
         Algorithm algorithm = message.getAlgorithm();
 
+        if (!App.authorized) {
+            if (message.getType().equals(MessageType.SESSION_KEY)) {
+                byte[] encryptedPublicKeyBytes = Base64.getDecoder().decode(contentMessage.getContent());
+                SecretKey sessionKey = new SecretKeySpec(
+                        encryptedPublicKeyBytes, 0, encryptedPublicKeyBytes.length, CONSTANTS.AesAlgName);
+                return new KeyMessage(sessionKey, message.getType(), algorithm);
+            }
+
+            return message;
+        }
+
         if (message.getType().equals(MessageType.TEXT)) {
 
             String algorithmType = algorithm.getEncryptionType();
@@ -37,6 +49,7 @@ public class Decryptor {
             byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(contentMessage.getContent()));
             System.out.println("Decryptor - decrypted message: " + new String(plainText));
             contentMessage.setContent(new String(plainText));
+            return contentMessage;
 
         } else if (message.getType().equals(MessageType.SESSION_KEY)) {
 
@@ -57,7 +70,11 @@ public class Decryptor {
                 fileMessage = (FileMessage) message;
 
             Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
-            encryptCipher.init(Cipher.DECRYPT_MODE, key);
+            if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgECBMode)) {
+                encryptCipher.init(Cipher.DECRYPT_MODE, key);
+            } else if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode)) {
+                encryptCipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
+            }
 
             Files.write(fileMessage.getFile().toPath(), fileMessage.getFileBytes());
             FileInputStream inputStream = new FileInputStream(fileMessage.getFile());

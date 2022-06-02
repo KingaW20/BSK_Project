@@ -35,6 +35,8 @@ public class App {
 
     private static App singleton;
     private static String userName;
+    public static String userPassword;
+    public static boolean authorized = true;
     private static ClientData clientData;
     private static ClientData clientData2;
     private static Decryptor decryptor;
@@ -121,12 +123,15 @@ public class App {
 
     public static void main(String[] args) {
         JFrame logInPanelFrame = new JFrame("App");
-        logInPanelFrame.setSize(300, 200);
+        logInPanelFrame.setSize(400, 300);
         logInPanelFrame.setResizable(false);
         LogInPanel logInPanel = new LogInPanel(logInPanelFrame);
         logInPanelFrame.setContentPane(logInPanel.logInPanel);
 
-        while(userName == null) { userName = logInPanel.getUserName(); }
+        while(userName == null)
+            userName = logInPanel.getUserName();
+        while (userPassword == null)
+            userPassword = logInPanel.getUserPassword();
         logInPanelFrame.dispose();
 
         JFrame frame = new JFrame("App " + userName);
