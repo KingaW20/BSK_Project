@@ -60,7 +60,7 @@ public class Encryptor {
 
     public static FileMessage encryptFile(Message message, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, IOException {
+            BadPaddingException, IllegalBlockSizeException, IOException, InvalidAlgorithmParameterException {
 
         String algorithmType = message.getAlgorithm().getEncryptionType();
         System.out.println("Encrypt algorithm: " + algorithmType);
@@ -75,7 +75,10 @@ public class Encryptor {
                     fileMessage = (FileMessage) message;
 
                 Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
-                encryptCipher.init(Cipher.ENCRYPT_MODE, key);
+                if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgECBMode))
+                    encryptCipher.init(Cipher.ENCRYPT_MODE, key);
+                else if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode))
+                    encryptCipher.init(Cipher.ENCRYPT_MODE, key, message.getAlgorithm().getIvParameter());
 
                 FileInputStream inputStream = new FileInputStream(fileMessage.getFile());
                 byte[] inputBytes = new byte[(int) fileMessage.getFile().length()];

@@ -9,16 +9,22 @@ public class LogInPanel {
     private JButton okButton;
     private JLabel userLabel;
     private JTextField loginText;
+    private JLabel passwordLabel;
+    private JPasswordField passwordText;
     private String userName;
+    private String userPassword;
 
     public LogInPanel(JFrame frame) {
         loginText.setDocument(new LimitJTextField(25));
+        passwordText.setDocument(new LimitJTextField(15));
         frame.setVisible(true);
 
         okButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 userName = loginText.getText();
+                userPassword = String.valueOf(passwordText.getPassword());
+                System.out.println("Password: " + userPassword);
             }
         });
     }
@@ -26,6 +32,8 @@ public class LogInPanel {
     public String getUserName() {
         return userName;
     }
+
+    public String getUserPassword() { return userPassword; }
 }
 
 class LimitJTextField extends PlainDocument {
