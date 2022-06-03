@@ -8,6 +8,8 @@ import java.io.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Encryptor {
 
@@ -80,20 +82,15 @@ public class Encryptor {
                 else if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode))
                     encryptCipher.init(Cipher.ENCRYPT_MODE, key, message.getAlgorithm().getIvParameter());
 
-                FileInputStream inputStream = new FileInputStream(fileMessage.getFile());
-                byte[] inputBytes = new byte[(int) fileMessage.getFile().length()];
-                inputStream.read(inputBytes);
+                Map<Integer, byte[]> fileBytes = fileMessage.splitReadFile();
+                Map<Integer, byte[]> encryptedFileBytes = new HashMap<>();
+                for (Map.Entry<Integer, byte[]> entry : fileBytes.entrySet()) {
+                    encryptedFileBytes.put(entry.getKey(), encryptCipher.doFinal(entry.getValue()));
+                }
+                File outputFile = FileMessage.saveFile(fileMessage.getFileName(), encryptedFileBytes);
 
-                byte[] outputBytes = encryptCipher.doFinal(inputBytes);
-
-                File outputFile = new File(fileMessage.getFileName());
-                FileOutputStream outputStream = new FileOutputStream(outputFile);
-                outputStream.write(outputBytes);
-
-                inputStream.close();
-                outputStream.close();
-
-                result = new FileMessage(outputFile, outputFile.getName(), message.getType(), message.getAlgorithm());
+                result = new FileMessage(null, outputFile.getName(), message.getType(),
+                        message.getAlgorithm(), encryptedFileBytes);
                 System.out.println("Encryptor - encrypted file: " + outputFile);
             }
         }
@@ -111,7 +108,12 @@ public class Encryptor {
 
         if (algorithm != null) {
             Cipher encryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
-            encryptCipher.init(Cipher.ENCRYPT_MODE, key, algorithm.getIvParameter());
+
+            if (keyMessage.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgECBMode))
+                encryptCipher.init(Cipher.ENCRYPT_MODE, key);
+            else if (keyMessage.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode))
+                encryptCipher.init(Cipher.ENCRYPT_MODE, key, keyMessage.getAlgorithm().getIvParameter());
+
             result = encryptCipher.doFinal(keyMessage.getKey().getEncoded());
             System.out.println("Encryptor - Encrypted key: " + result);
         }

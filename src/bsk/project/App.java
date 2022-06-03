@@ -9,11 +9,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
@@ -43,12 +40,12 @@ public class App {
 
     private static Encryptor encryptor;
     private static ArrayList<Message> clientMessages;
-    private static Map<String, byte[]> files;
+    private static Map<String, Map<Integer, byte[]>> files;
 
     public App() {
         singleton = this;
         clientMessages = new ArrayList<>();
-        files = new HashMap<String, byte[]>();
+        files = new HashMap<>();
         communication.setLineWrap(true);
         input.setLineWrap(true);
         encryptor = new Encryptor();
@@ -73,10 +70,11 @@ public class App {
 
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     file = fileChooser.getSelectedFile();
-                    System.out.println("Opening: " + file.getName() + ".");
+                    System.out.println("Opening: " + file.getName());
+                    System.out.println("File length: " + file.length());
                     fileName.setText(file.getName());
                 } else {
-                    System.out.println("Open command cancelled by user.");
+                    System.out.println("Open command cancelled by user");
                 }
             }
         });
@@ -109,7 +107,7 @@ public class App {
                         communication.append(clientData.getUserName() + " send file " + messageFile.getName() + "\n");
                         clientMessages.add(encryptor.encryptFile(
                                 new FileMessage(messageFile, messageFile.getName(), MessageType.FILE,
-                                        new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam)),
+                                        new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam), null),
                                 clientData.getSessionKey()));
                     }
                 }
@@ -159,7 +157,7 @@ public class App {
         return clientMessages;
     }
 
-    public static Map<String, byte[]> getFiles() {
+    public static Map<String, Map<Integer, byte[]>> getFiles() {
         return files;
     }
 
@@ -184,8 +182,8 @@ public class App {
                 System.out.println("App - iv received: " + iv2);
                 clientData2.setIv(mess.getAlgorithm().getIv());
             } else if (mess instanceof FileMessage) {
-                files.put(((FileMessage) mess).getFileName(), ((FileMessage)decryptor.decryptMessage(
-                        mess, clientData2.getSessionKey())).getFileBytes());
+                Map<Integer, byte[]> decryptedMessage = decryptor.decryptFile(mess, clientData2.getSessionKey());
+                files.put(((FileMessage) mess).getFileName(), decryptedMessage);
                 singleton.communication.append(clientData2.getUserName() + " send file " +
                         ((FileMessage) mess).getFileName() + "\n");
 
@@ -199,8 +197,13 @@ public class App {
                     File fileToSave = singleton.fileChooser.getSelectedFile();
                     System.out.println("Save as file: " + fileToSave.getAbsolutePath() + "\\" +
                             ((FileMessage) mess).getFileName());
-                    Files.write(Path.of(fileToSave.getAbsolutePath() + "/" + ((FileMessage) mess).getFileName()),
-                            files.get(((FileMessage) mess).getFileName()));
+
+                    FileMessage.saveFile(
+                            fileToSave.getAbsolutePath() + "/" + ((FileMessage) mess).getFileName(),
+                            decryptedMessage);
+
+//                    Files.write(Path.of(fileToSave.getAbsolutePath() + "/" + ((FileMessage) mess).getFileName()),
+//                            ((FileMessage) mess).CombineFile(files.get(((FileMessage) mess).getFileName())));
                 }
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | BadPaddingException |
@@ -209,7 +212,7 @@ public class App {
         }
     }
 
-    public static void addFile(String fileName, byte[] fileBytes) {
+    public static void addFile(String fileName, Map<Integer, byte[]> fileBytes) {
         files.put(fileName, fileBytes);
     }
 

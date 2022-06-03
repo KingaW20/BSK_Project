@@ -21,4 +21,7 @@ public class CONSTANTS {
     public static int shaKeyLength = 256;
     public static String saltAlg = "SHA1PRNG";
     public static String ShaAlg = "PBKDF2WithHmacSHA256";
+
+    //files
+    public static double partFileMaxLength = 500 * 1024 * 1024;
 }
