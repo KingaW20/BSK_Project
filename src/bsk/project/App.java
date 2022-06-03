@@ -34,18 +34,18 @@ public class App {
     private static String userName;
     public static String userPassword;
     public static boolean authorized = true;
-    private static ClientData clientData;
+    public static ClientData clientData;
     private static ClientData clientData2;
     private static Decryptor decryptor;
 
     private static Encryptor encryptor;
     private static ArrayList<Message> clientMessages;
-    private static Map<String, Map<Integer, byte[]>> files;
+    private static String fileToSavePath;
+    private static OutputStream out;
 
     public App() {
         singleton = this;
         clientMessages = new ArrayList<>();
-        files = new HashMap<>();
         communication.setLineWrap(true);
         input.setLineWrap(true);
         encryptor = new Encryptor();
@@ -105,10 +105,7 @@ public class App {
                     }
                     if (messageFile != null) {
                         communication.append(clientData.getUserName() + " send file " + messageFile.getName() + "\n");
-                        clientMessages.add(encryptor.encryptFile(
-                                new FileMessage(messageFile, messageFile.getName(), MessageType.FILE,
-                                        new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam), null),
-                                clientData.getSessionKey()));
+                        FileMessage.splitAndAddPartsToSend(messageFile, encryptionMode, ivParam);
                     }
                 }
                 catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
@@ -157,10 +154,6 @@ public class App {
         return clientMessages;
     }
 
-    public static Map<String, Map<Integer, byte[]>> getFiles() {
-        return files;
-    }
-
     public static Encryptor getEncryptor() {
         return encryptor;
     }
@@ -182,29 +175,10 @@ public class App {
                 System.out.println("App - iv received: " + iv2);
                 clientData2.setIv(mess.getAlgorithm().getIv());
             } else if (mess instanceof FileMessage) {
-                Map<Integer, byte[]> decryptedMessage = decryptor.decryptFile(mess, clientData2.getSessionKey());
-                files.put(((FileMessage) mess).getFileName(), decryptedMessage);
-                singleton.communication.append(clientData2.getUserName() + " send file " +
-                        ((FileMessage) mess).getFileName() + "\n");
-
-                // saving received file
-                singleton.fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                singleton.fileChooser.setDialogTitle("Specify a directory to save received file");
-                int userSelection = singleton.fileChooser.showDialog(
-                        singleton.fileChooser.getParent(), "Save");
-
-                if (userSelection == JFileChooser.APPROVE_OPTION) {
-                    File fileToSave = singleton.fileChooser.getSelectedFile();
-                    System.out.println("Save as file: " + fileToSave.getAbsolutePath() + "\\" +
-                            ((FileMessage) mess).getFileName());
-
-                    FileMessage.saveFile(
-                            fileToSave.getAbsolutePath() + "/" + ((FileMessage) mess).getFileName(),
-                            decryptedMessage);
-
-//                    Files.write(Path.of(fileToSave.getAbsolutePath() + "/" + ((FileMessage) mess).getFileName()),
-//                            ((FileMessage) mess).CombineFile(files.get(((FileMessage) mess).getFileName())));
-                }
+                FileMessage file = (FileMessage) mess;
+                byte[] decryptedMessage = decryptor.decryptFile(mess, clientData2.getSessionKey());
+                checkIfAllPartsReceived(decryptedMessage, file.getFileName(),file.getPartNumber(),
+                        file.getAllPartsNumber());
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | BadPaddingException |
                 IllegalBlockSizeException | InvalidAlgorithmParameterException | IOException e) {
@@ -212,13 +186,38 @@ public class App {
         }
     }
 
-    public static void addFile(String fileName, Map<Integer, byte[]> fileBytes) {
-        files.put(fileName, fileBytes);
+    public static void checkIfAllPartsReceived(byte[] decryptedMessage, String fileName,
+                                               int partNumber, double allPartsNumber) throws IOException {
+
+        // first part of file -> select place to save
+        if (partNumber == 0) {
+            singleton.fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            singleton.fileChooser.setDialogTitle("Specify a directory to save received file");
+            int userSelection = singleton.fileChooser.showDialog(
+                    singleton.fileChooser.getParent(), "Save");
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = singleton.fileChooser.getSelectedFile();
+                fileToSavePath = fileToSave.getAbsolutePath() + "/" + fileName;
+            }
+
+            File file = new File(fileToSavePath);
+            out = new FileOutputStream(file);
+        }
+
+        // save file part
+        out.write(decryptedMessage);
+
+        if (partNumber == allPartsNumber - 1) {
+            System.out.println("Save as file: " + fileToSavePath);
+            fileToSavePath = null;
+            singleton.communication.append(clientData2.getUserName() + " send file " + fileName + "\n");
+            out.close();
+        }
     }
 
     public static void setKeyMessage(KeyMessage mess) {
-        if (mess.getType() == MessageType.PUBLIC_KEY) {
+        if (mess.getType() == MessageType.PUBLIC_KEY)
             clientData2.setPrivatePublicKey(null, (PublicKey) mess.getKey());
-        }
     }
 }

@@ -10,8 +10,6 @@ import java.io.*;
 import java.security.*;
 import java.security.spec.*;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Decryptor {
 
@@ -62,7 +60,6 @@ public class Decryptor {
             System.out.println("Decryptor - decrypted session key: " + sessionKey);
 
             return new KeyMessage(sessionKey, message.getType(), algorithm);
-
         }
 
         return contentMessage;
@@ -84,11 +81,10 @@ public class Decryptor {
             byte[] decryptedKeyBytes = decryptCipher.doFinal(Base64.getDecoder().decode(message.getContent()));
 
             KeyFactory keyFactory = KeyFactory.getInstance(CONSTANTS.RsaAlgName);
-            if (type.equals(MessageType.PRIVATE_KEY)) {
+            if (type.equals(MessageType.PRIVATE_KEY))
                 result = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKeyBytes));
-            } else if (type.equals(MessageType.PUBLIC_KEY)) {
+            else if (type.equals(MessageType.PUBLIC_KEY))
                 result = keyFactory.generatePublic(new X509EncodedKeySpec(decryptedKeyBytes));
-            }
 
             System.out.println("Decryptor - decrypted key: " + result);
         }
@@ -96,22 +92,22 @@ public class Decryptor {
         return result;
     }
 
-    public static Map<Integer, byte[]> decryptFile(Message message, Key key) throws
-            NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
-            InvalidAlgorithmParameterException, IOException, BadPaddingException, IllegalBlockSizeException {
+    public static byte[] decryptFile(Message message, Key key) throws
+            NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IOException,
+            InvalidAlgorithmParameterException, BadPaddingException, IllegalBlockSizeException {
 
-        Map<Integer, byte[]> result = new HashMap<>();
         FileMessage fileMessage = null;
         if (message instanceof FileMessage)
             fileMessage = (FileMessage) message;
-
-        Algorithm algorithm = message.getAlgorithm();
 
         if (!App.authorized) {
             return fileMessage.getFileBytes();
         }
 
+        byte[] result = null;
+
         if (message.getType().equals(MessageType.FILE)) {
+            Algorithm algorithm = message.getAlgorithm();
             Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
             if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgECBMode)) {
                 encryptCipher.init(Cipher.DECRYPT_MODE, key);
@@ -119,12 +115,9 @@ public class Decryptor {
                 encryptCipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
             }
 
-            for (Map.Entry<Integer, byte[]> entry : fileMessage.getFileBytes().entrySet()) {
-                result.put(entry.getKey(), encryptCipher.doFinal(entry.getValue()));
-            }
+            result = encryptCipher.doFinal(fileMessage.getFileBytes());
 
-            System.out.println("Decryptor - decrypted file block size: " + result.size());
-            fileMessage.deleteFileFromDisk();
+            System.out.println("Decryptor - decrypted file part: " + fileMessage.getFileName());
         }
 
         return result;

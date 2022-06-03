@@ -21,9 +21,6 @@ public class ClientReceiver implements Runnable {
             getPublicKey(ois);
             getSessionKey(ois);
             getMessages(ois);
-
-//        ois.close();
-//        Thread.currentThread().interrupt();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

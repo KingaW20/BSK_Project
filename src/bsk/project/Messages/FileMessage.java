@@ -1,85 +1,60 @@
 package bsk.project.Messages;
 
-import bsk.project.CONSTANTS;
+import bsk.project.*;
 
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
-import java.nio.file.Files;
-import java.util.*;
+import java.security.*;
 
 public class FileMessage extends Message implements Serializable {
 
     private File file;
     private String fileName;
-    private Map<Integer, byte[]> fileBytes;
+    private byte[] fileBytes;
+    private int partNumber;
+    private double allPartsNumber;
 
-    public FileMessage(File file, String fileName, MessageType type, Algorithm algorithm,
-                       Map<Integer, byte[]> fileBytes) throws IOException {
+    public FileMessage(String fileName, byte[] fileBytes, int partNumber, double allPartsNumber,
+                       MessageType type, Algorithm algorithm) {
         super(type, algorithm);
-        this.file = file;
         this.fileName = fileName;
-        if (fileBytes != null)
-            this.fileBytes = fileBytes;
-        else
-            this.fileBytes = splitReadFile();
+        this.fileBytes = fileBytes;
+        this.partNumber = partNumber;
+        this.allPartsNumber = allPartsNumber;
     }
 
     public File getFile() { return this.file; }
 
     public String getFileName() { return this.fileName; }
 
-    public Map<Integer, byte[]> getFileBytes() { return fileBytes; }
+    public byte[] getFileBytes() { return this.fileBytes; }
 
-    public byte[] getFileBytesByIndex(int index) { return fileBytes.get(index); }
+    public int getPartNumber() { return this.partNumber; }
+
+    public double getAllPartsNumber() { return this.allPartsNumber; }
 
     public void setFile(File file) { this.file = file; }
 
-    public void setMessage(FileMessage fileMessage) throws IOException {
-        this.file = fileMessage.getFile();
-        this.type = fileMessage.getType();
-        this.fileBytes.put(0, Files.readAllBytes(file.toPath()));
-    }
+    public static void splitAndAddPartsToSend(File file, String encryptionMode, IvParameterSpec ivParam)
+            throws IOException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
 
-    public void deleteFileFromDisk() {
-        File file = new File(fileName);
-        if (file.delete()) {
-            System.out.println("Deleted the file: " + fileName);
-        } else {
-            System.out.println("Failed to delete the file: " + fileName);
-        }
-    }
-
-    public Map<Integer, byte[]> splitReadFile() throws IOException {
-        Map<Integer, byte[]> result = new HashMap<>();
-        int x = 0;
-
-        double fileLength = file.length();
-        double remainingFileLength = fileLength;
-        double partsNumber = Math.ceil(fileLength / CONSTANTS.partFileMaxLength);
+        double remainingFileLength = file.length();
+        double partsNumber = Math.ceil(file.length() / CONSTANTS.partFileMaxLength);
         FileInputStream fileInputStream = new FileInputStream(file);
 
         for (int i = 0; i < partsNumber; i++) {
-            byte[] inputBytes = new byte[(int)(remainingFileLength >= CONSTANTS.partFileMaxLength ?
-                    CONSTANTS.partFileMaxLength : remainingFileLength)];
+            byte[] inputBytes = new byte[(int)(Math.min(remainingFileLength, CONSTANTS.partFileMaxLength))];
             fileInputStream.read(inputBytes);
-            result.put(i, inputBytes);
+
+            App.getMessages().add(App.getEncryptor().encryptFile(
+                    new FileMessage(file.getName(), inputBytes, i, partsNumber, MessageType.FILE,
+                            new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam)),
+                    App.clientData.getSessionKey()));
+
             remainingFileLength -= CONSTANTS.partFileMaxLength;
-            x++;
         }
-        System.out.println("Parts: " + x);
-
-        return result;
-    }
-
-    public static File saveFile(String path, Map<Integer, byte[]> fileBytes) throws IOException {
-        File file = new File(path);
-        OutputStream out = new FileOutputStream(file);
-
-        // write to file all parties
-        for (Map.Entry<Integer, byte[]> entry : fileBytes.entrySet()) {
-            out.write(entry.getValue());
-        }
-
-        out.close();
-        return file;
+        System.out.println("splitAndAddPartsToSend - Parts number: " + partsNumber);
     }
 }

@@ -6,10 +6,7 @@ import bsk.project.Messages.*;
 import javax.crypto.*;
 import java.io.*;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Encryptor {
 
@@ -62,7 +59,7 @@ public class Encryptor {
 
     public static FileMessage encryptFile(Message message, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, IOException, InvalidAlgorithmParameterException {
+            BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
 
         String algorithmType = message.getAlgorithm().getEncryptionType();
         System.out.println("Encrypt algorithm: " + algorithmType);
@@ -82,16 +79,11 @@ public class Encryptor {
                 else if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode))
                     encryptCipher.init(Cipher.ENCRYPT_MODE, key, message.getAlgorithm().getIvParameter());
 
-                Map<Integer, byte[]> fileBytes = fileMessage.splitReadFile();
-                Map<Integer, byte[]> encryptedFileBytes = new HashMap<>();
-                for (Map.Entry<Integer, byte[]> entry : fileBytes.entrySet()) {
-                    encryptedFileBytes.put(entry.getKey(), encryptCipher.doFinal(entry.getValue()));
-                }
-                File outputFile = FileMessage.saveFile(fileMessage.getFileName(), encryptedFileBytes);
+                byte[] encryptedFileBytes = encryptCipher.doFinal(fileMessage.getFileBytes());
 
-                result = new FileMessage(null, outputFile.getName(), message.getType(),
-                        message.getAlgorithm(), encryptedFileBytes);
-                System.out.println("Encryptor - encrypted file: " + outputFile);
+                result = new FileMessage(fileMessage.getFileName(), encryptedFileBytes, fileMessage.getPartNumber(),
+                        fileMessage.getAllPartsNumber(), fileMessage.getType(), fileMessage.getAlgorithm());
+                System.out.println("Encryptor - encrypted file: " + fileMessage.getFileName());
             }
         }
 
@@ -100,7 +92,7 @@ public class Encryptor {
 
     public static byte[] encryptKey(KeyMessage keyMessage, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException {
+            BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
 
         Algorithm algorithm = keyMessage.getAlgorithm();
         System.out.println("Encryptor - Encrypt algorithm: " + algorithm.getEncryptionType());

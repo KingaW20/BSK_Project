@@ -9,8 +9,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.security.*;
 import java.security.spec.*;
-import java.util.Arrays;
-import java.util.Base64;
+import java.util.*;
 
 public class ClientData {
     private SecretKey localKey;
@@ -118,8 +117,6 @@ public class ClientData {
     private SecretKey generateSessionKey(int size, String algorithmName) throws NoSuchAlgorithmException {
         KeyGenerator keyGenerator = KeyGenerator.getInstance(algorithmName);
         keyGenerator.init(size);
-        //return keyGenerator.generateKey();
-
         SecretKey key = keyGenerator.generateKey();
         System.out.println("ClientData - session key generated: " + key);
         return key;
@@ -224,9 +221,8 @@ public class ClientData {
     private void saveToFile(String filePath, byte[] key) {
         File targetFile = new File(filePath);
         File parent = targetFile.getParentFile();
-        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+        if (parent != null && !parent.exists() && !parent.mkdirs())
             throw new IllegalStateException("Couldn't create dir: " + parent);
-        }
 
         try (FileOutputStream fos = new FileOutputStream(filePath)) {
             fos.write(key);

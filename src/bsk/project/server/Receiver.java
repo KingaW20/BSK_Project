@@ -1,6 +1,5 @@
 package bsk.project.server;
 
-import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
 
 import java.io.*;
@@ -33,20 +32,16 @@ public class Receiver implements Runnable {
             while(true) {
                 Message mess = (Message) ois.readObject();
                 if (mess != null) {
-                    if (mess instanceof ContentMessage) {
+                    if (mess instanceof ContentMessage)
                         System.out.println("Received mess: " + ((ContentMessage) mess).getContent());
-                    } else if (mess instanceof KeyMessage) {
+                    else if (mess instanceof KeyMessage)
                         System.out.println("Received key: " + ((KeyMessage) mess).getKey());
-                    } else if (mess instanceof FileMessage) {
+                    else if (mess instanceof FileMessage)
                         System.out.println("Received file: " + ((FileMessage) mess).getFile());
-                    }
 
                     Server.setMessFrom(firstClient, mess);
                 }
             }
-
-//        ois.close();
-//        Thread.currentThread().interrupt();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
