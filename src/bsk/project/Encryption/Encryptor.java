@@ -1,5 +1,6 @@
 package bsk.project.Encryption;
 
+import bsk.project.App;
 import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
 
@@ -11,47 +12,29 @@ import java.util.Base64;
 public class Encryptor {
 
     public static ContentMessage encryptMessage(Message message, Key key)
-            throws NoSuchPaddingException, NoSuchAlgorithmException,
-            InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, IOException {
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException {
 
-        String algorithmType = message.getAlgorithm().getEncryptionType();
-        System.out.println("Encrypt algorithm: " + algorithmType);
+        System.out.println("Encrypt algorithm: " + message.getAlgorithm().getEncryptionType());
         ContentMessage result = null;
-        if (message instanceof ContentMessage)
+
+        if (message.getType().equals(Message.MessageType.TEXT)) {
             result = (ContentMessage) message;
+            Cipher cipher = setupCipher(message.getAlgorithm(), key, Cipher.ENCRYPT_MODE);
+            byte[] cipherText = cipher.doFinal(result.getContent().getBytes());
+            String encryptedMessageContent = Base64.getEncoder().encodeToString(cipherText);
 
-        if (algorithmType != null) {
-            if (message.getType().equals(Message.MessageType.TEXT)) {
+            result.setContent(encryptedMessageContent);
+            System.out.println("Encryptor - encrypted message: " + encryptedMessageContent);
 
-                Cipher cipher = Cipher.getInstance(algorithmType);
+        } else if (message.getType().equals(Message.MessageType.SESSION_KEY)) {
+            Cipher ciper = setupCipher(message.getAlgorithm(), key, Cipher.ENCRYPT_MODE);
+            byte[] sessionKeyBytes = ((KeyMessage) message).getKey().getEncoded();
+            byte[] encryptedSessionKeyBytes = ciper.doFinal(sessionKeyBytes);
+            String encryptedSessionKeyString = Base64.getEncoder().encodeToString(encryptedSessionKeyBytes);
 
-                if (algorithmType.equals(CONSTANTS.AesAlgECBMode)) {
-                    cipher.init(Cipher.ENCRYPT_MODE, key);
-                } else if (algorithmType.equals(CONSTANTS.AesAlgCBCMode)) {
-                    cipher.init(Cipher.ENCRYPT_MODE, key, result.getAlgorithm().getIvParameter());
-                }
-
-                byte[] cipherText = cipher.doFinal(result.getContent().getBytes());
-                String encryptedMessageContent = Base64.getEncoder().encodeToString(cipherText);
-                result.setContent(encryptedMessageContent);
-                System.out.println("Encryptor - encrypted message: " + encryptedMessageContent);
-
-            } else if (message.getType().equals(Message.MessageType.SESSION_KEY)) {
-                KeyMessage keyMessage = null;
-                if (message instanceof KeyMessage)
-                    keyMessage = (KeyMessage) message;
-
-                Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
-                encryptCipher.init(Cipher.ENCRYPT_MODE, key);
-
-                byte[] sessionKeyBytes = keyMessage.getKey().getEncoded();
-                byte[] encryptedSessionKeyBytes = encryptCipher.doFinal(sessionKeyBytes);
-                String encryptedSessionKeyString = Base64.getEncoder().encodeToString(encryptedSessionKeyBytes);
-
-                result = new ContentMessage(encryptedSessionKeyString, message.getType(), message.getAlgorithm());
-                System.out.println("Encryptor - encrypted session key: " + encryptedSessionKeyString);
-            }
+            result = new ContentMessage(encryptedSessionKeyString, message.getType(), message.getAlgorithm());
+            System.out.println("Encryptor - encrypted session key: " + encryptedSessionKeyString);
         }
 
         return result;
@@ -61,30 +44,19 @@ public class Encryptor {
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
             BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
 
-        String algorithmType = message.getAlgorithm().getEncryptionType();
-        System.out.println("Encrypt algorithm: " + algorithmType);
+        System.out.println("Encrypt algorithm: " + message.getAlgorithm().getEncryptionType());
         FileMessage result = null;
-        if (message instanceof FileMessage)
-            result = (FileMessage) message;
 
-        if (algorithmType != null) {
-            if (message.getType().equals(Message.MessageType.FILE)) {
-                FileMessage fileMessage = null;
-                if (message instanceof FileMessage)
-                    fileMessage = (FileMessage) message;
+        if (message.getType().equals(Message.MessageType.FILE)) {
+            FileMessage fileMessage = (FileMessage) message;
+            Cipher ciper = setupCipher(message.getAlgorithm(), key, Cipher.ENCRYPT_MODE);
+            byte[] encryptedFileBytes = ciper.doFinal(fileMessage.getFileBytes());
 
-                Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
-                if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgECBMode))
-                    encryptCipher.init(Cipher.ENCRYPT_MODE, key);
-                else if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode))
-                    encryptCipher.init(Cipher.ENCRYPT_MODE, key, message.getAlgorithm().getIvParameter());
-
-                byte[] encryptedFileBytes = encryptCipher.doFinal(fileMessage.getFileBytes());
-
-                result = new FileMessage(fileMessage.getFileName(), encryptedFileBytes, fileMessage.getPartNumber(),
-                        fileMessage.getAllPartsNumber(), fileMessage.getType(), fileMessage.getAlgorithm());
-                System.out.println("Encryptor - encrypted file: " + fileMessage.getFileName());
-            }
+            result = new FileMessage(fileMessage.getFileName(), encryptedFileBytes, fileMessage.getPartNumber(),
+                    fileMessage.getAllPartsNumber(), fileMessage.getType(), fileMessage.getAlgorithm());
+            System.out.println("Encryptor - encrypted file: " + fileMessage.getFileName());
+            App.setEncryptionProgressBar((int)(
+                    100 * (float)(fileMessage.getPartNumber() + 1)/(float)fileMessage.getAllPartsNumber()));
         }
 
         return result;
@@ -94,22 +66,23 @@ public class Encryptor {
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
             BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
 
-        Algorithm algorithm = keyMessage.getAlgorithm();
-        System.out.println("Encryptor - Encrypt algorithm: " + algorithm.getEncryptionType());
-        byte[] result = null;
-
-        if (algorithm != null) {
-            Cipher encryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
-
-            if (keyMessage.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgECBMode))
-                encryptCipher.init(Cipher.ENCRYPT_MODE, key);
-            else if (keyMessage.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode))
-                encryptCipher.init(Cipher.ENCRYPT_MODE, key, keyMessage.getAlgorithm().getIvParameter());
-
-            result = encryptCipher.doFinal(keyMessage.getKey().getEncoded());
-            System.out.println("Encryptor - Encrypted key: " + result);
-        }
+        System.out.println("Encryptor - Encrypt algorithm: " + keyMessage.getAlgorithm().getEncryptionType());
+        Cipher ciper = setupCipher(keyMessage.getAlgorithm(), key, Cipher.ENCRYPT_MODE);
+        byte [] result = ciper.doFinal(keyMessage.getKey().getEncoded());
+        System.out.println("Encryptor - Encrypted key: " + result);
 
         return result;
+    }
+
+    public static Cipher setupCipher(Algorithm algorithm, Key key, int cipherMode) throws NoSuchPaddingException,
+            NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException {
+
+        Cipher cipher = Cipher.getInstance(algorithm.getEncryptionType());
+        if (algorithm.getEncryptionType().equals(CONSTANTS.AesAlgCBCMode))
+            cipher.init(cipherMode, key, algorithm.getIvParameter());
+        else
+            cipher.init(cipherMode, key);
+
+        return cipher;
     }
 }

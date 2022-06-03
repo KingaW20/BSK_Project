@@ -16,9 +16,7 @@ public class Decryptor {
     public static Message decryptMessage(Message message, Key key)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
             InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException {
-        ContentMessage contentMessage = null;
-        if (message instanceof ContentMessage)
-            contentMessage = (ContentMessage) message;
+        ContentMessage contentMessage = (ContentMessage) message;
         Algorithm algorithm = message.getAlgorithm();
 
         if (!App.authorized) {
@@ -34,16 +32,8 @@ public class Decryptor {
 
         if (message.getType().equals(MessageType.TEXT)) {
 
-            String algorithmType = algorithm.getEncryptionType();
-            System.out.println("Decrypt algorithm: " + algorithmType);
-            Cipher cipher = Cipher.getInstance(algorithmType);
-
-            if (algorithmType.equals(CONSTANTS.AesAlgECBMode)) {
-                cipher.init(Cipher.DECRYPT_MODE, key);
-            } else if (algorithmType.equals(CONSTANTS.AesAlgCBCMode)) {
-                cipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
-            }
-
+            System.out.println("Decrypt algorithm: " + algorithm.getEncryptionType());
+            Cipher cipher = Encryptor.setupCipher(algorithm, key, Cipher.DECRYPT_MODE);
             byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(contentMessage.getContent()));
             System.out.println("Decryptor - decrypted message: " + new String(plainText));
             contentMessage.setContent(new String(plainText));
@@ -52,9 +42,8 @@ public class Decryptor {
         } else if (message.getType().equals(MessageType.SESSION_KEY)) {
 
             byte[] encryptedPublicKeyBytes = Base64.getDecoder().decode(contentMessage.getContent());
-            Cipher decryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
-            decryptCipher.init(Cipher.DECRYPT_MODE, key);
-            byte[] decryptedSessionKeyBytes = decryptCipher.doFinal(encryptedPublicKeyBytes);
+            Cipher cipher = Encryptor.setupCipher(algorithm, key, Cipher.DECRYPT_MODE);
+            byte[] decryptedSessionKeyBytes = cipher.doFinal(encryptedPublicKeyBytes);
             SecretKey sessionKey = new SecretKeySpec(
                     decryptedSessionKeyBytes, 0, decryptedSessionKeyBytes.length, CONSTANTS.AesAlgName);
             System.out.println("Decryptor - decrypted session key: " + sessionKey);
@@ -65,29 +54,24 @@ public class Decryptor {
         return contentMessage;
     }
 
-    public static Key decryptKey(ContentMessage message, Key key)
-            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException {
+    public static Key decryptKey(ContentMessage message, Key key) throws NoSuchPaddingException,
+            NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+            InvalidAlgorithmParameterException, InvalidKeySpecException {
 
-        Algorithm algorithm = message.getAlgorithm();
-        String type = algorithm.getEncryptionType();
+        String type = message.getAlgorithm().getEncryptionType();
         System.out.println("Decryptor - Decrypt algorithm: " + type);
         Key result = null;
 
-        if (algorithm != null) {
+        Cipher cipher = Encryptor.setupCipher(message.getAlgorithm(), key, Cipher.DECRYPT_MODE);
+        byte[] decryptedKeyBytes = cipher.doFinal(Base64.getDecoder().decode(message.getContent()));
 
-            Cipher decryptCipher = Cipher.getInstance(algorithm.getEncryptionType());
-            decryptCipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
-            byte[] decryptedKeyBytes = decryptCipher.doFinal(Base64.getDecoder().decode(message.getContent()));
+        KeyFactory keyFactory = KeyFactory.getInstance(CONSTANTS.RsaAlgName);
+        if (type.equals(MessageType.PRIVATE_KEY))
+            result = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKeyBytes));
+        else if (type.equals(MessageType.PUBLIC_KEY))
+            result = keyFactory.generatePublic(new X509EncodedKeySpec(decryptedKeyBytes));
 
-            KeyFactory keyFactory = KeyFactory.getInstance(CONSTANTS.RsaAlgName);
-            if (type.equals(MessageType.PRIVATE_KEY))
-                result = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decryptedKeyBytes));
-            else if (type.equals(MessageType.PUBLIC_KEY))
-                result = keyFactory.generatePublic(new X509EncodedKeySpec(decryptedKeyBytes));
-
-            System.out.println("Decryptor - decrypted key: " + result);
-        }
+        System.out.println("Decryptor - decrypted key: " + result);
 
         return result;
     }
@@ -96,30 +80,17 @@ public class Decryptor {
             NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IOException,
             InvalidAlgorithmParameterException, BadPaddingException, IllegalBlockSizeException {
 
-        FileMessage fileMessage = null;
-        if (message instanceof FileMessage)
-            fileMessage = (FileMessage) message;
+        FileMessage fileMessage = (FileMessage) message;
 
-        if (!App.authorized) {
+        if (!App.authorized)
             return fileMessage.getFileBytes();
-        }
 
         byte[] result = null;
-
         if (message.getType().equals(MessageType.FILE)) {
-            Algorithm algorithm = message.getAlgorithm();
-            Cipher encryptCipher = Cipher.getInstance(message.getAlgorithm().getEncryptionType());
-            if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgECBMode)) {
-                encryptCipher.init(Cipher.DECRYPT_MODE, key);
-            } else if (message.getAlgorithm().getEncryptionType().equals(CONSTANTS.AesAlgCBCMode)) {
-                encryptCipher.init(Cipher.DECRYPT_MODE, key, algorithm.getIvParameter());
-            }
-
-            result = encryptCipher.doFinal(fileMessage.getFileBytes());
-
+            Cipher decryptCipher = Encryptor.setupCipher(message.getAlgorithm(), key, Cipher.DECRYPT_MODE);
+            result = decryptCipher.doFinal(fileMessage.getFileBytes());
             System.out.println("Decryptor - decrypted file part: " + fileMessage.getFileName());
         }
-
         return result;
     }
 }

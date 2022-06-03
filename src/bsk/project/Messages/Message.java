@@ -18,8 +18,6 @@ public class Message implements Serializable {
     }
 
     public MessageType getType() { return this.type; }
-    public Algorithm getAlgorithm() { return this.algorithm; }
 
-    public void setType(MessageType type) { this.type = type; }
-    public void setAlgorithm(Algorithm algorithm) { this.algorithm = algorithm; }
+    public Algorithm getAlgorithm() { return this.algorithm; }
 }

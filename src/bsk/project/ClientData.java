@@ -30,6 +30,7 @@ public class ClientData {
             throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, NoSuchProviderException,
             IllegalBlockSizeException, NoSuchPaddingException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeyException {
+
         this.sessionKeySize = sessionKeySize;
         this.userName = userName;
         this.path = CONSTANTS.keyPath + userName;
@@ -43,7 +44,7 @@ public class ClientData {
             iv = generateIv();
             localKey = generateLocalKey();
             sessionKey = generateSessionKey(sessionKeySize, CONSTANTS.AesAlgName);
-            keyPair = generateKeyPair(keyPairSize, CONSTANTS.RsaAlgName);
+            keyPair = generateKeyPair(keyPairSize);
         } else {
             localKey = null;
             sessionKey = null;
@@ -105,9 +106,8 @@ public class ClientData {
         if (readLocalKey != null && !Arrays.equals(readLocalKey.getEncoded(), localKey.getEncoded())) {
             App.authorized = false;
             System.out.println("Wrong password");
-        } else {
+        } else
             saveToFile(localKeyPath, localKey.getEncoded());
-        }
 
         System.out.println("Local key: " + localKey);
 
@@ -122,9 +122,10 @@ public class ClientData {
         return key;
     }
 
-    private KeyPair generateKeyPair(int size, String algorithm)
-            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, InvalidKeyException,
-            BadPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, NoSuchPaddingException {
+    private KeyPair generateKeyPair(int size) throws NoSuchAlgorithmException, IOException,
+            InvalidKeySpecException, InvalidKeyException, BadPaddingException, InvalidAlgorithmParameterException,
+            IllegalBlockSizeException, NoSuchPaddingException {
+
         // if keys exist, read them
         KeyPair kp = readKeys();
         if (kp != null) {
@@ -140,6 +141,7 @@ public class ClientData {
     private KeyPair readKeys() throws IOException, InvalidKeySpecException,
             NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException,
             InvalidAlgorithmParameterException, NoSuchPaddingException {
+
         PublicKey publicKey = null;
         PrivateKey privateKey = null;
 

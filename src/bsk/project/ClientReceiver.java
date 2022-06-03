@@ -21,6 +21,7 @@ public class ClientReceiver implements Runnable {
             getPublicKey(ois);
             getSessionKey(ois);
             getMessages(ois);
+
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -67,7 +68,8 @@ public class ClientReceiver implements Runnable {
             Message mess = (Message) ois.readObject();
             if (mess != null) {
                 if (mess instanceof ContentMessage) {
-                    System.out.println("CilentReceiver - encrypted message received: " + ((ContentMessage) mess).getContent());
+                    System.out.println("CilentReceiver - encrypted message received: " +
+                            ((ContentMessage) mess).getContent());
                     App.setMessage(mess);
                 } else if (mess instanceof FileMessage) {
                     System.out.println("CilentReceiver - encrypted file received: " + ((FileMessage) mess).getFile());

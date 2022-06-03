@@ -20,18 +20,8 @@ public class Algorithm implements Serializable {
     }
 
     public String getEncryptionType() { return encryptionType; }
-    public int getKeySize() { return keySize; }
-    public IvParameterSpec getIvParameter() { return new IvParameterSpec(iv); }
-    public byte[] getIv() { return iv; }
 
-    public void setEncryptionType(String encryptionType) { this.encryptionType = encryptionType; }
-    public void setKeySize(int keySize) { this.keySize = keySize; }
-    public void setIv(IvParameterSpec iv) {
-        if (iv == null) {
-            this.iv = null;
-        } else {
-            this.iv = iv.getIV();
-        }
-    }
-    public void setIv(byte[] iv) { this.iv = iv; }
+    public IvParameterSpec getIvParameter() { return new IvParameterSpec(iv); }
+
+    public byte[] getIv() { return iv; }
 }
