@@ -38,10 +38,9 @@ public class ClientSender implements Runnable {
             sendSessionKey(oos);
             sendMessages(oos);
 
-//        oos.close();
-//        Thread.currentThread().interrupt();
         } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
-                IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
+                IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException |
+                InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -57,12 +56,13 @@ public class ClientSender implements Runnable {
     private void sendSessionKey(ObjectOutputStream oos) throws IOException, NoSuchAlgorithmException,
             NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException {
+
         boolean sended = false;
 
         while (!sended) {
             encryptor = App.getEncryptor();
             if (clientData2.getKeyPair() != null) {
-                ContentMessage contentMessage = (ContentMessage) encryptor.encryptMessage(
+                ContentMessage contentMessage = encryptor.encryptMessage(
                         new KeyMessage(clientData.getSessionKey(), MessageType.SESSION_KEY,
                                 new Algorithm(CONSTANTS.RsaAlgName, clientData.getSessionKeySize(), null)),
                         clientData2.getPublicKey());
@@ -77,7 +77,7 @@ public class ClientSender implements Runnable {
         }
     }
 
-    private void sendMessages(ObjectOutputStream oos) throws IOException {
+    private void sendMessages(ObjectOutputStream oos) throws IOException, InterruptedException {
 
         while (true) {
             clientMessages = App.getMessages();
@@ -90,11 +90,18 @@ public class ClientSender implements Runnable {
                     oos.reset();
                     oos.flush();
                 } else if (mess instanceof FileMessage) {
+                    FileMessage fileMessage = (FileMessage) mess;
                     oos.writeObject(mess);
                     System.out.println("ClientSender - encrypted file sended: " + ((FileMessage)mess).getFileName());
                     oos.reset();
                     oos.flush();
+                    App.setSendingProgressBar(
+                            (int)(100 * (float)(fileMessage.getPartNumber() + 1)/(float)fileMessage.getAllPartsNumber()));
                 }
+            } else if (App.getEncryptionProgressBarValue() == 100 && App.getSendingProgressBarValue() == 100) {
+                Thread.sleep(1000);
+                App.setSendingProgressBar(0);
+                App.setEncryptionProgressBar(0);
             }
         }
     }

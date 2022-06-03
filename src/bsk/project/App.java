@@ -26,6 +26,10 @@ public class App {
     private JRadioButton cbcMode;
     private JButton addFileButton;
     private JLabel fileName;
+    private JProgressBar sendingProgressBar;
+    private JLabel sengingProgressText;
+    private JLabel encryptionProgressText;
+    private JProgressBar encryptionProgressBar;
     private JFileChooser fileChooser = new JFileChooser();
     private String noFileLoaded = "no file added";
     private File file;
@@ -48,11 +52,16 @@ public class App {
         clientMessages = new ArrayList<>();
         communication.setLineWrap(true);
         input.setLineWrap(true);
+        singleton.sendingProgressBar.setStringPainted(true);
+        singleton.encryptionProgressBar.setStringPainted(true);
+
         encryptor = new Encryptor();
         decryptor = new Decryptor();
         try {
-            clientData = new ClientData(userName, true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
-            clientData2 = new ClientData(null, false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
+            clientData = new ClientData(
+                    userName, true, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
+            clientData2 = new ClientData(
+                    null, false, CONSTANTS.sessionKeySize, CONSTANTS.keyPairSize);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException | NoSuchProviderException |
                 IllegalBlockSizeException | NoSuchPaddingException | BadPaddingException |
                 InvalidAlgorithmParameterException | InvalidKeyException e) {
@@ -158,27 +167,53 @@ public class App {
         return encryptor;
     }
 
+    public static int getSendingProgressBarValue() {
+        return singleton.sendingProgressBar.getValue();
+    }
+
+    public static int getEncryptionProgressBarValue() {
+        return singleton.encryptionProgressBar.getValue();
+    }
+
     public static void setUserNameMessage(String name) {
         clientData2.setUserName(name);
+    }
+
+    public static void setSendingProgressBar(int percent) {
+        singleton.sendingProgressBar.setValue(percent);
+        singleton.sendingProgressBar.repaint();
+        singleton.sendingProgressBar.update(singleton.sendingProgressBar.getGraphics());
+    }
+
+    public static void setEncryptionProgressBar(int percent) {
+        singleton.encryptionProgressBar.setValue(percent);
+        singleton.encryptionProgressBar.repaint();
+        singleton.encryptionProgressBar.update(singleton.encryptionProgressBar.getGraphics());
     }
 
     public static void setMessage(Message mess) {
         try {
             if (mess instanceof ContentMessage && mess.getType().equals(MessageType.TEXT)) {
+
                 singleton.communication.append(clientData2.getUserName() + ": " +
                         ((ContentMessage)decryptor.decryptMessage(
                                 mess, clientData2.getSessionKey())).getContent() + "\n");
+
             } else if (mess instanceof ContentMessage && mess.getType().equals(MessageType.SESSION_KEY)) {
+
                 clientData2.setSessionKey((SecretKey) ((KeyMessage)
                         decryptor.decryptMessage(mess, clientData.getPrivateKey())).getKey());
                 byte[] iv2 = mess.getAlgorithm().getIv();
                 System.out.println("App - iv received: " + iv2);
                 clientData2.setIv(mess.getAlgorithm().getIv());
+
             } else if (mess instanceof FileMessage) {
+
                 FileMessage file = (FileMessage) mess;
                 byte[] decryptedMessage = decryptor.decryptFile(mess, clientData2.getSessionKey());
                 checkIfAllPartsReceived(decryptedMessage, file.getFileName(),file.getPartNumber(),
                         file.getAllPartsNumber());
+
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | BadPaddingException |
                 IllegalBlockSizeException | InvalidAlgorithmParameterException | IOException e) {

@@ -53,6 +53,8 @@ public class FileMessage extends Message implements Serializable {
         FileMessage fileMessage = new FileMessage(file.getName(), null, 0, partsNumber,
                 MessageType.FILE, new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam));
 
+        App.setSendingProgressBar(0);
+        App.setEncryptionProgressBar(0);
         for (int i = 0; i < partsNumber; i++) {
             byte[] inputBytes = new byte[(int)(Math.min(remainingFileLength, CONSTANTS.partFileMaxLength))];
             fileInputStream.read(inputBytes);

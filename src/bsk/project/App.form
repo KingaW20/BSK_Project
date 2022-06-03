@@ -3,7 +3,7 @@
   <grid id="27dc6" binding="window" layout-manager="GridLayoutManager" row-count="3" column-count="6" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="15" left="15" bottom="15" right="15"/>
     <constraints>
-      <xy x="20" y="20" width="863" height="644"/>
+      <xy x="20" y="20" width="943" height="644"/>
     </constraints>
     <properties/>
     <border type="none"/>
@@ -114,6 +114,50 @@
         <properties>
           <text value="Send"/>
         </properties>
+      </component>
+      <component id="1c6d9" class="javax.swing.JProgressBar" binding="sendingProgressBar">
+        <constraints>
+          <grid row="1" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false">
+            <minimum-size width="100" height="30"/>
+            <preferred-size width="100" height="30"/>
+            <maximum-size width="100" height="30"/>
+          </grid>
+        </constraints>
+        <properties/>
+      </component>
+      <component id="d284e" class="javax.swing.JLabel" binding="sengingProgressText">
+        <constraints>
+          <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <minimum-size width="100" height="30"/>
+            <preferred-size width="100" height="30"/>
+            <maximum-size width="100" height="30"/>
+          </grid>
+        </constraints>
+        <properties>
+          <text value="Sending progess"/>
+        </properties>
+      </component>
+      <component id="c89f3" class="javax.swing.JLabel" binding="encryptionProgressText">
+        <constraints>
+          <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="10" fill="0" indent="0" use-parent-layout="false">
+            <minimum-size width="100" height="30"/>
+            <preferred-size width="100" height="30"/>
+            <maximum-size width="100" height="30"/>
+          </grid>
+        </constraints>
+        <properties>
+          <text value="Encryption progress"/>
+        </properties>
+      </component>
+      <component id="2a188" class="javax.swing.JProgressBar" binding="encryptionProgressBar">
+        <constraints>
+          <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="2" fill="1" indent="0" use-parent-layout="false">
+            <minimum-size width="100" height="30"/>
+            <preferred-size width="100" height="30"/>
+            <maximum-size width="100" height="30"/>
+          </grid>
+        </constraints>
+        <properties/>
       </component>
     </children>
   </grid>

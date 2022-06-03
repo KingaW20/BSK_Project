@@ -1,5 +1,6 @@
 package bsk.project.Encryption;
 
+import bsk.project.App;
 import bsk.project.CONSTANTS;
 import bsk.project.Messages.*;
 
@@ -54,6 +55,8 @@ public class Encryptor {
             result = new FileMessage(fileMessage.getFileName(), encryptedFileBytes, fileMessage.getPartNumber(),
                     fileMessage.getAllPartsNumber(), fileMessage.getType(), fileMessage.getAlgorithm());
             System.out.println("Encryptor - encrypted file: " + fileMessage.getFileName());
+            App.setEncryptionProgressBar((int)(
+                    100 * (float)(fileMessage.getPartNumber() + 1)/(float)fileMessage.getAllPartsNumber()));
         }
 
         return result;

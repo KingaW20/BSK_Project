@@ -14,8 +14,6 @@ public class KeyMessage extends Message implements Serializable {
 
     public Key getKey() { return this.key; }
 
-    public void setKey(Key key) { this.key = key; }
-
     public void setMessage(KeyMessage mess) {
         this.key = mess.getKey();
         this.type = mess.getType();
