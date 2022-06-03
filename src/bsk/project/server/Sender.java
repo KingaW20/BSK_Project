@@ -38,22 +38,18 @@ public class Sender implements Runnable {
                     Message mess = messages.remove(0);
                     oos.writeObject(mess);
 
-                    if (mess instanceof ContentMessage) {
+                    if (mess instanceof ContentMessage)
                         System.out.println("Message send: " + ((ContentMessage) mess).getContent());
-                    } else if (mess instanceof KeyMessage) {
+                    else if (mess instanceof KeyMessage)
                         System.out.println("Key send: " + ((KeyMessage) mess).getKey());
-                    } else if (mess instanceof FileMessage) {
+                    else if (mess instanceof FileMessage)
                         System.out.println("File send: " + ((FileMessage) mess).getFile());
-                    }
 
                     oos.reset();
                     oos.flush();
                     Server.setMessFrom(!firstClient, null);
                 }
             }
-
-//        oos.close();
-//        Thread.currentThread().interrupt();
         } catch (IOException e) {
             e.printStackTrace();
         }

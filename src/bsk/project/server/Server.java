@@ -32,7 +32,7 @@ public class Server {
             while(true);
         } catch (IOException e) {
             e.printStackTrace();
-            //System.exit(1);
+            System.exit(1);
         }
 
     }
@@ -46,21 +46,19 @@ public class Server {
     }
 
     public static void setUserName(boolean firstClient, String userName) {
-        if (firstClient) {
+        if (firstClient)
             userName1 = userName;
-        } else {
+        else
             userName2 = userName;
-        }
     }
 
     public static void setMessFrom(boolean firstClient, Message mess) {
         if (mess != null)
         {
-            if (firstClient) {
+            if (firstClient)
                 messFrom1.add(mess);
-            } else {
+            else
                 messFrom2.add(mess);
-            }
         }
     }
 }
