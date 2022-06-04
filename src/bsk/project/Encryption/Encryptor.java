@@ -53,7 +53,7 @@ public class Encryptor {
             byte[] encryptedFileBytes = ciper.doFinal(fileMessage.getFileBytes());
 
             result = new FileMessage(fileMessage.getFileName(), encryptedFileBytes, fileMessage.getPartNumber(),
-                    fileMessage.getAllPartsNumber(), fileMessage.getType(), fileMessage.getAlgorithm());
+                    fileMessage.getAllPartsNumber(), fileMessage.getAlgorithm());
             System.out.println("Encryptor - encrypted file: " + fileMessage.getFileName());
             App.setEncryptionProgressBar((int)(
                     100 * (float)(fileMessage.getPartNumber() + 1)/(float)fileMessage.getAllPartsNumber()));

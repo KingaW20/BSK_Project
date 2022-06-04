@@ -73,7 +73,11 @@ public class ClientReceiver implements Runnable {
                     App.setMessage(mess);
                 } else if (mess instanceof FileMessage) {
                     System.out.println("CilentReceiver - encrypted file received: " + ((FileMessage) mess).getFile());
+                    if (((FileMessage)mess).getPartNumber() == 0)
+                        App.startReceivingTime();
                     App.setMessage(mess);
+                    if (((FileMessage)mess).getPartNumber() == ((FileMessage)mess).getAllPartsNumber() - 1)
+                        App.stopReceivingTime();
                 }
             }
         }

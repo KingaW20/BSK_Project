@@ -91,10 +91,17 @@ public class ClientSender implements Runnable {
                     oos.flush();
                 } else if (mess instanceof FileMessage) {
                     FileMessage fileMessage = (FileMessage) mess;
+
+                    if (fileMessage.getPartNumber() == 0)
+                        App.startSendingTime();
+
                     oos.writeObject(mess);
                     System.out.println("ClientSender - encrypted file sended: " + ((FileMessage)mess).getFileName());
                     oos.reset();
                     oos.flush();
+
+                    if (fileMessage.getPartNumber() == (int)fileMessage.getAllPartsNumber() - 1)
+                        App.stopSendingTime();
                     App.setSendingProgressBar(
                             (int)(100 * (float)(fileMessage.getPartNumber() + 1)/(float)fileMessage.getAllPartsNumber()));
                 }

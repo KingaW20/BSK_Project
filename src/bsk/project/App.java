@@ -47,6 +47,13 @@ public class App {
     private static String fileToSavePath;
     private static OutputStream out;
 
+    private static long encryptionTime;
+    private static long sendingTime;
+    private static long decryptionTime;
+    private static long receivingTimeBefore;
+    private static long receivingTimeAfter;
+    private static long savingTime;
+
     public App() {
         singleton = this;
         clientMessages = new ArrayList<>();
@@ -115,6 +122,7 @@ public class App {
                     if (messageFile != null) {
                         communication.append(clientData.getUserName() + " send file " + messageFile.getName() + "\n");
                         FileMessage.splitAndAddPartsToSend(messageFile, encryptionMode, ivParam);
+                        System.out.println("File size: " + messageFile.length());
                     }
                 }
                 catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
@@ -191,6 +199,59 @@ public class App {
         singleton.encryptionProgressBar.update(singleton.encryptionProgressBar.getGraphics());
     }
 
+    public static void startEncryptionTime() {
+        encryptionTime = System.nanoTime();
+    }
+
+    public static void startSendingTime() {
+        sendingTime = System.nanoTime();
+    }
+
+    public static void startDecryptionTime() {
+        decryptionTime = System.nanoTime();
+    }
+
+    public static void startSavingTime() {
+        savingTime = System.nanoTime();
+    }
+
+    public static void startReceivingTime() {
+        receivingTimeBefore = System.nanoTime();
+    }
+
+    public static void stopTemporarilyReceivingTime() {
+        receivingTimeBefore = System.nanoTime() - receivingTimeBefore;
+    }
+
+    public static void startTemporarilyReceivingTime() {
+        receivingTimeAfter = System.nanoTime();
+    }
+
+    public static void stopReceivingTime() {
+        receivingTimeAfter = System.nanoTime() - receivingTimeAfter + receivingTimeBefore;
+        System.out.println("Receiving time: " + receivingTimeAfter / 10e6 + " ms");
+    }
+
+    public static void stopEncryptionTime() {
+        encryptionTime = System.nanoTime() - encryptionTime;
+        System.out.println("Encryption time: " + encryptionTime / 10e6 + " ms");
+    }
+
+    public static void stopSendingTime() {
+        sendingTime = System.nanoTime() - sendingTime;
+        System.out.println("Sending time: " + sendingTime / 10e6 + " ms");
+    }
+
+    public static void stopDecryptionTime() {
+        decryptionTime = System.nanoTime() - decryptionTime;
+        System.out.println("Decryption time: " + decryptionTime / 10e6 + " ms");
+    }
+
+    public static void stopSavingTime() {
+        savingTime = System.nanoTime() - savingTime;
+        System.out.println("Saving time: " + savingTime / 10e6 + " ms");
+    }
+
     public static void setMessage(Message mess) {
         try {
             if (mess instanceof ContentMessage && mess.getType().equals(MessageType.TEXT)) {
@@ -210,10 +271,14 @@ public class App {
             } else if (mess instanceof FileMessage) {
 
                 FileMessage file = (FileMessage) mess;
+                if (file.getPartNumber() == 0)
+                    startDecryptionTime();
                 byte[] decryptedMessage = decryptor.decryptFile(mess, clientData2.getSessionKey());
+                if (file.getPartNumber() == (int)file.getAllPartsNumber() - 1)
+                    stopDecryptionTime();
+
                 checkIfAllPartsReceived(decryptedMessage, file.getFileName(),file.getPartNumber(),
                         file.getAllPartsNumber());
-
             }
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | BadPaddingException |
                 IllegalBlockSizeException | InvalidAlgorithmParameterException | IOException e) {
@@ -226,6 +291,7 @@ public class App {
 
         // first part of file -> select place to save
         if (partNumber == 0) {
+            stopTemporarilyReceivingTime();
             singleton.fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             singleton.fileChooser.setDialogTitle("Specify a directory to save received file");
             int userSelection = singleton.fileChooser.showDialog(
@@ -238,12 +304,15 @@ public class App {
 
             File file = new File(fileToSavePath);
             out = new FileOutputStream(file);
+            startTemporarilyReceivingTime();
+            startSavingTime();
         }
 
         // save file part
         out.write(decryptedMessage);
 
-        if (partNumber == allPartsNumber - 1) {
+        if (partNumber == (int)allPartsNumber - 1) {
+            stopSavingTime();
             System.out.println("Save as file: " + fileToSavePath);
             fileToSavePath = null;
             singleton.communication.append(clientData2.getUserName() + " send file " + fileName + "\n");

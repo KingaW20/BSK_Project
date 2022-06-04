@@ -14,16 +14,14 @@ public class FileMessage extends Message implements Serializable {
     private byte[] fileBytes;
     private int partNumber;
     private double allPartsNumber;
-    private double blockSize;
 
     public FileMessage(String fileName, byte[] fileBytes, int partNumber, double allPartsNumber,
-                       MessageType type, Algorithm algorithm) {
-        super(type, algorithm);
+                       Algorithm algorithm) {
+        super(MessageType.FILE, algorithm);
         this.fileName = fileName;
         this.fileBytes = fileBytes;
         this.partNumber = partNumber;
         this.allPartsNumber = allPartsNumber;
-        this.blockSize = CONSTANTS.partFileMaxLength;
     }
 
     public File getFile() { return this.file; }
@@ -51,10 +49,11 @@ public class FileMessage extends Message implements Serializable {
         FileInputStream fileInputStream = new FileInputStream(file);
 
         FileMessage fileMessage = new FileMessage(file.getName(), null, 0, partsNumber,
-                MessageType.FILE, new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam));
+                new Algorithm(encryptionMode, CONSTANTS.sessionKeySize, ivParam));
 
         App.setSendingProgressBar(0);
         App.setEncryptionProgressBar(0);
+        App.startEncryptionTime();
         for (int i = 0; i < partsNumber; i++) {
             byte[] inputBytes = new byte[(int)(Math.min(remainingFileLength, CONSTANTS.partFileMaxLength))];
             fileInputStream.read(inputBytes);
@@ -65,6 +64,7 @@ public class FileMessage extends Message implements Serializable {
 
             remainingFileLength -= CONSTANTS.partFileMaxLength;
         }
+        App.stopEncryptionTime();
         System.out.println("splitAndAddPartsToSend - Parts number: " + partsNumber);
     }
 }
